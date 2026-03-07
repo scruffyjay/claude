@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monte Carlo Budget Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242736;
+      --border: #2e3148;
+      --accent: #6c63ff;
+      --accent2: #00d4aa;
+      --accent3: #ff6b6b;
+      --accent4: #ffd93d;
+      --text: #e8eaf6;
+      --text-muted: #8b90b4;
+      --radius: 10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    header h1 { font-size: 18px; font-weight: 700; letter-spacing: .5px; }
+    header span { font-size: 12px; color: var(--text-muted); margin-left: auto; }
+
+    /* ── Layout ── */
+    .app { display: grid; grid-template-columns: 300px 1fr; min-height: calc(100vh - 57px); }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    /* ── Upload zone ── */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(108,99,255,.08);
+    }
+    .upload-zone input { display: none; }
+    .upload-zone .icon { font-size: 28px; margin-bottom: 8px; }
+    .upload-zone p { color: var(--text-muted); font-size: 12px; margin-top: 6px; }
+    .upload-zone .hint { font-size: 11px; color: var(--text-muted); opacity: .7; margin-top: 4px; }
+
+    /* ── Sim controls ── */
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      gap: 10px;
+    }
+    .control-row label { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+    .control-row input[type="number"] {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 5px 8px;
+      width: 90px;
+      font-size: 13px;
+    }
+    .control-row select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 13px;
+    }
+
+    /* ── Budget total ── */
+    .budget-total {
+      background: var(--surface2);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+    }
+    .budget-total-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    .budget-total-value { font-size: 22px; font-weight: 700; color: var(--accent); }
+
+    /* ── Campaign sliders ── */
+    #campaigns-panel { flex: 1; overflow-y: auto; }
+    .campaign-card {
+      background: var(--surface2);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .campaign-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .campaign-name {
+      font-weight: 600;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .color-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .campaign-budget-input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 4px 7px;
+      width: 88px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .campaign-slider {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+      margin-bottom: 6px;
+    }
+    .campaign-meta {
+      display: flex;
+      gap: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .campaign-meta span strong { color: var(--text); }
+
+    /* ── Run button ── */
+    #run-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 11px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      transition: opacity .2s, transform .1s;
+      letter-spacing: .5px;
+    }
+    #run-btn:hover { opacity: .88; }
+    #run-btn:active { transform: scale(.98); }
+    #run-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── Main area ── */
+    .main {
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      overflow-y: auto;
+    }
+
+    /* ── Empty / loading states ── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 12px;
+      color: var(--text-muted);
+    }
+    .empty-state .big-icon { font-size: 52px; }
+    .empty-state h2 { font-size: 18px; font-weight: 600; color: var(--text); }
+    .empty-state p { font-size: 13px; text-align: center; max-width: 340px; line-height: 1.6; }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 14px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .stat-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    .stat-value { font-size: 22px; font-weight: 700; }
+    .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+    .pos { color: var(--accent2); }
+    .neg { color: var(--accent3); }
+    .neu { color: var(--accent4); }
+
+    /* ── Charts grid ── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+    .chart-card.wide { grid-column: 1 / -1; }
+    .chart-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .chart-title .badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: rgba(108,99,255,.2);
+      color: var(--accent);
+    }
+    .chart-wrap { position: relative; }
+
+    /* ── Progress bar ── */
+    #progress-bar-wrap {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      z-index: 999;
+      display: none;
+    }
+    #progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      width: 0%;
+      transition: width .15s;
+    }
+
+    /* ── Percentile toggles ── */
+    .toggles { display: flex; gap: 8px; flex-wrap: wrap; }
+    .toggle-btn {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .toggle-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+      .charts-grid { grid-template-columns: 1fr; }
+      .chart-card.wide { grid-column: 1; }
+    }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+
+<header>
+  <div style="display:flex;align-items:center;gap:10px">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <h1>Monte Carlo Budget Dashboard</h1>
+  </div>
+  <span id="header-status">Upload a CSV to begin</span>
+</header>
+
+<div class="app">
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+
+    <!-- Upload -->
+    <div>
+      <div class="section-label">Data Source</div>
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="csv-input" accept=".csv" />
+        <div class="icon">📂</div>
+        <div id="upload-label" style="font-weight:600">Drop CSV or click to upload</div>
+        <p>campaign_name, mean_return, std_dev, [budget]</p>
+        <p class="hint">or historical columns per campaign</p>
+      </div>
+      <div style="margin-top:8px;text-align:center">
+        <button id="demo-btn" style="font-size:11px;background:none;border:none;color:var(--accent);cursor:pointer;text-decoration:underline">Load demo data</button>
+      </div>
+    </div>
+
+    <!-- Sim settings -->
+    <div>
+      <div class="section-label">Simulation Settings</div>
+      <div class="control-row">
+        <label>Simulations</label>
+        <input type="number" id="n-sims" value="5000" min="500" max="50000" step="500" />
+      </div>
+      <div class="control-row">
+        <label>Periods</label>
+        <input type="number" id="n-periods" value="12" min="1" max="60" />
+      </div>
+      <div class="control-row">
+        <label>Distribution</label>
+        <select id="dist-type">
+          <option value="normal">Normal</option>
+          <option value="lognormal">Log-normal</option>
+          <option value="uniform">Uniform</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Total budget -->
+    <div>
+      <div class="section-label">Total Budget</div>
+      <div class="budget-total">
+        <div class="budget-total-label">Allocated</div>
+        <div class="budget-total-value" id="total-budget-display">$0</div>
+      </div>
+    </div>
+
+    <!-- Campaign sliders -->
+    <div id="campaigns-panel">
+      <div class="section-label">Budget Allocation</div>
+      <div id="campaigns-list">
+        <p style="color:var(--text-muted);font-size:12px;">Load data to see campaigns</p>
+      </div>
+    </div>
+
+    <button id="run-btn" disabled>▶ Run Simulation</button>
+
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main" id="main-content">
+    <div class="empty-state" id="empty-state">
+      <div class="big-icon">📊</div>
+      <h2>No simulation yet</h2>
+      <p>Upload a CSV with campaign data or load the demo, then hit <strong>Run Simulation</strong> to see interactive Monte Carlo results.</p>
+      <p style="margin-top:8px;font-size:12px;background:var(--surface2);padding:10px 14px;border-radius:8px;text-align:left">
+        <strong>Expected CSV format:</strong><br>
+        <code style="color:var(--accent2)">campaign,mean_return,std_dev,budget</code><br>
+        <em>or historical format:</em><br>
+        <code style="color:var(--accent2)">period,Campaign_A,Campaign_B,...</code>
+      </p>
+    </div>
+
+    <div id="results-area" style="display:none">
+      <!-- Stats -->
+      <div class="stats-bar" id="stats-bar"></div>
+
+      <!-- Charts -->
+      <div class="charts-grid">
+        <div class="chart-card wide">
+          <div class="chart-title">
+            Return Distribution (all simulations)
+            <div class="toggles" id="dist-toggles"></div>
+          </div>
+          <div class="chart-wrap" style="height:220px"><canvas id="chart-dist"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">
+            Cumulative Return Paths
+            <span class="badge">P10 / P50 / P90</span>
+          </div>
+          <div class="chart-wrap" style="height:200px"><canvas id="chart-paths"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">
+            Campaign Contribution
+            <span class="badge">Expected Return</span>
+          </div>
+          <div class="chart-wrap" style="height:200px"><canvas id="chart-contrib"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">
+            Risk / Return by Campaign
+            <span class="badge">Bubble = Budget</span>
+          </div>
+          <div class="chart-wrap" style="height:200px"><canvas id="chart-scatter"></canvas></div>
+        </div>
+        <div class="chart-card wide">
+          <div class="chart-title">
+            Probability of Exceeding Target Return
+            <span class="badge">Cumulative Distribution</span>
+          </div>
+          <div class="chart-wrap" style="height:180px"><canvas id="chart-cdf"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ──────────────────────────────────────────────
+// Constants & palette
+// ──────────────────────────────────────────────
+const PALETTE = [
+  '#6c63ff','#00d4aa','#ff6b6b','#ffd93d','#4ecdc4',
+  '#a29bfe','#fd79a8','#55efc4','#fdcb6e','#74b9ff',
+  '#e17055','#81ecec','#fab1a0','#b2bec3','#dfe6e9'
+];
+
+let campaigns = [];     // [{name, mean, std, budget, color}]
+let simResults = null;  // [{totals[], byPeriod[], byCampaign[]}]
+let charts = {};
+
+// ──────────────────────────────────────────────
+// Utility
+// ──────────────────────────────────────────────
+const fmt = (n, digits = 0) =>
+  n == null ? '—' : (n >= 0 ? '+' : '') +
+  n.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+
+const fmtMoney = v =>
+  '$' + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 0 });
+
+const pct = n => (n * 100).toFixed(1) + '%';
+
+// Box-Muller normal random
+function randn() {
+  let u, v;
+  do { u = Math.random(); v = Math.random(); } while (u === 0);
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function sampleReturn(mean, std, dist) {
+  switch (dist) {
+    case 'lognormal': {
+      const mu = Math.log(mean * mean / Math.sqrt(std * std + mean * mean));
+      const sigma = Math.sqrt(Math.log(1 + (std * std) / (mean * mean)));
+      return Math.exp(mu + sigma * randn()) - 1;
+    }
+    case 'uniform': {
+      const lo = mean - std * Math.sqrt(3);
+      const hi = mean + std * std * Math.sqrt(3);
+      return lo + Math.random() * (hi - lo);
+    }
+    default: return mean + std * randn();
+  }
+}
+
+function percentile(arr, p) {
+  const s = [...arr].sort((a, b) => a - b);
+  const idx = (p / 100) * (s.length - 1);
+  const lo = Math.floor(idx), hi = Math.ceil(idx);
+  return s[lo] + (s[hi] - s[lo]) * (idx - lo);
+}
+
+function mean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
+
+// ──────────────────────────────────────────────
+// CSV parsing
+// ──────────────────────────────────────────────
+function parseCSV(text) {
+  const { data, errors } = Papa.parse(text.trim(), {
+    header: true, dynamicTyping: true, skipEmptyLines: true
+  });
+  if (errors.length && data.length === 0) throw new Error(errors[0].message);
+
+  const cols = Object.keys(data[0]).map(k => k.trim().toLowerCase());
+
+  // ── Summary format: campaign, mean_return, std_dev, [budget]
+  if (cols.some(c => c.includes('mean') || c.includes('return')) &&
+      cols.some(c => c.includes('std') || c.includes('dev'))) {
+    return parseSummaryFormat(data, cols);
+  }
+
+  // ── Historical format: period column + one column per campaign
+  return parseHistoricalFormat(data, cols);
+}
+
+function parseSummaryFormat(data, cols) {
+  const nameKey  = Object.keys(data[0]).find(k => /name|campaign|channel/i.test(k));
+  const meanKey  = Object.keys(data[0]).find(k => /mean|avg|return/i.test(k));
+  const stdKey   = Object.keys(data[0]).find(k => /std|dev|sigma/i.test(k));
+  const budKey   = Object.keys(data[0]).find(k => /budget|spend|alloc/i.test(k));
+
+  if (!meanKey || !stdKey) throw new Error('Could not detect mean/std columns');
+
+  return data.map((row, i) => ({
+    name:   String(row[nameKey] || `Campaign ${i + 1}`).trim(),
+    mean:   Number(row[meanKey]),
+    std:    Number(row[stdKey]),
+    budget: budKey ? Number(row[budKey]) : 10000,
+    color:  PALETTE[i % PALETTE.length]
+  }));
+}
+
+function parseHistoricalFormat(data, cols) {
+  // First column treated as period index; rest are campaigns
+  const skip = /period|date|month|week|time|index/i;
+  const campaignKeys = Object.keys(data[0]).filter(k => !skip.test(k));
+  if (campaignKeys.length === 0) throw new Error('No campaign columns found');
+
+  return campaignKeys.map((key, i) => {
+    const vals = data.map(r => Number(r[key])).filter(v => !isNaN(v));
+    const mu = mean(vals);
+    const sigma = Math.sqrt(vals.reduce((s, v) => s + (v - mu) ** 2, 0) / vals.length);
+    return {
+      name:   key.trim(),
+      mean:   mu,
+      std:    sigma,
+      budget: 10000,
+      color:  PALETTE[i % PALETTE.length]
+    };
+  });
+}
+
+// ──────────────────────────────────────────────
+// Simulation
+// ──────────────────────────────────────────────
+function runSimulation(campaigns, nSims, nPeriods, distType) {
+  const totals   = new Float64Array(nSims);
+  const byPeriod = Array.from({ length: nPeriods }, () => new Float64Array(nSims));
+  const byCampaign = campaigns.map(() => new Float64Array(nSims));
+
+  for (let s = 0; s < nSims; s++) {
+    let cumulative = 0;
+    for (let p = 0; p < nPeriods; p++) {
+      let periodTotal = 0;
+      campaigns.forEach((c, ci) => {
+        const r = sampleReturn(c.mean, c.std, distType);
+        const ret = c.budget * r;
+        periodTotal += ret;
+        byCampaign[ci][s] += ret;
+      });
+      cumulative += periodTotal;
+      byPeriod[p][s] = cumulative;
+    }
+    totals[s] = cumulative;
+  }
+
+  return { totals, byPeriod, byCampaign };
+}
+
+// ──────────────────────────────────────────────
+// Chart helpers
+// ──────────────────────────────────────────────
+const chartDefaults = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: { duration: 400 },
+  plugins: {
+    legend: { labels: { color: '#8b90b4', font: { size: 11 } } },
+    tooltip: { mode: 'index', intersect: false }
+  },
+  scales: {
+    x: { ticks: { color: '#8b90b4', font: { size: 10 } }, grid: { color: '#2e3148' } },
+    y: { ticks: { color: '#8b90b4', font: { size: 10 } }, grid: { color: '#2e3148' } }
+  }
+};
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function buildCharts(results, campaigns, nPeriods) {
+  const { totals, byPeriod, byCampaign } = results;
+  const n = totals.length;
+  const totalArr = Array.from(totals);
+  const mu = mean(totalArr);
+
+  // ── Stats
+  const statsEl = document.getElementById('stats-bar');
+  const p10 = percentile(totalArr, 10);
+  const p50 = percentile(totalArr, 50);
+  const p90 = percentile(totalArr, 90);
+  const probPos = totalArr.filter(v => v > 0).length / n;
+  const totalBudget = campaigns.reduce((s, c) => s + c.budget, 0) * nPeriods;
+  const roi = mu / (totalBudget || 1);
+
+  statsEl.innerHTML = `
+    <div class="stat-card"><div class="stat-label">Expected Return</div>
+      <div class="stat-value ${mu >= 0 ? 'pos' : 'neg'}">${fmtMoney(mu)}</div>
+      <div class="stat-sub">mean of ${n.toLocaleString()} sims</div></div>
+    <div class="stat-card"><div class="stat-label">P10 / P50 / P90</div>
+      <div class="stat-value neu" style="font-size:15px">${fmtMoney(p10)} / ${fmtMoney(p50)} / ${fmtMoney(p90)}</div>
+      <div class="stat-sub">percentile range</div></div>
+    <div class="stat-card"><div class="stat-label">Prob. of Profit</div>
+      <div class="stat-value ${probPos > 0.5 ? 'pos' : 'neg'}">${pct(probPos)}</div>
+      <div class="stat-sub">of simulations</div></div>
+    <div class="stat-card"><div class="stat-label">Expected ROI</div>
+      <div class="stat-value ${roi >= 0 ? 'pos' : 'neg'}">${pct(roi)}</div>
+      <div class="stat-sub">vs total budget spend</div></div>
+  `;
+
+  // ── 1. Distribution histogram
+  buildDistChart(totalArr, n);
+
+  // ── 2. Cumulative paths (P10/P50/P90 by period)
+  buildPathsChart(byPeriod, nPeriods);
+
+  // ── 3. Campaign contribution bar
+  buildContribChart(byCampaign, campaigns, n);
+
+  // ── 4. Risk/Return scatter
+  buildScatterChart(campaigns);
+
+  // ── 5. CDF
+  buildCDFChart(totalArr);
+}
+
+function buildDistChart(totalArr, n) {
+  destroyChart('dist');
+  const sorted = [...totalArr].sort((a, b) => a - b);
+  const lo = percentile(sorted, 1), hi = percentile(sorted, 99);
+  const BINS = 60;
+  const step = (hi - lo) / BINS;
+  const bins = Array.from({ length: BINS }, (_, i) => ({
+    x: lo + i * step + step / 2,
+    y: 0
+  }));
+  sorted.forEach(v => {
+    const idx = Math.min(BINS - 1, Math.max(0, Math.floor((v - lo) / step)));
+    bins[idx].y++;
+  });
+  const maxBin = Math.max(...bins.map(b => b.y));
+
+  const ctx = document.getElementById('chart-dist').getContext('2d');
+  charts.dist = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: bins.map(b => fmtMoney(b.x)),
+      datasets: [{
+        label: 'Frequency',
+        data: bins.map(b => b.y),
+        backgroundColor: bins.map(b =>
+          b.x < 0 ? 'rgba(255,107,107,0.65)' : 'rgba(108,99,255,0.65)'
+        ),
+        borderWidth: 0,
+        barPercentage: 1,
+        categoryPercentage: 1
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      plugins: {
+        ...chartDefaults.plugins,
+        legend: { display: false },
+        annotation: {}
+      },
+      scales: {
+        x: {
+          ...chartDefaults.scales.x,
+          ticks: {
+            ...chartDefaults.scales.x.ticks,
+            maxTicksLimit: 8,
+            callback: (_, i) => i % 8 === 0 ? fmtMoney(bins[i]?.x ?? 0) : ''
+          }
+        },
+        y: { ...chartDefaults.scales.y, display: false }
+      }
+    }
+  });
+}
+
+function buildPathsChart(byPeriod, nPeriods) {
+  destroyChart('paths');
+  const labels = Array.from({ length: nPeriods }, (_, i) => `P${i + 1}`);
+  const p10s = byPeriod.map(arr => percentile(Array.from(arr), 10));
+  const p50s = byPeriod.map(arr => percentile(Array.from(arr), 50));
+  const p90s = byPeriod.map(arr => percentile(Array.from(arr), 90));
+
+  const ctx = document.getElementById('chart-paths').getContext('2d');
+  charts.paths = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'P90', data: p90s,
+          borderColor: '#00d4aa', backgroundColor: 'rgba(0,212,170,.1)',
+          fill: '+1', tension: 0.4, pointRadius: 0, borderWidth: 2
+        },
+        {
+          label: 'P50', data: p50s,
+          borderColor: '#6c63ff', backgroundColor: 'rgba(108,99,255,.15)',
+          fill: '+1', tension: 0.4, pointRadius: 2, borderWidth: 2.5
+        },
+        {
+          label: 'P10', data: p10s,
+          borderColor: '#ff6b6b', backgroundColor: 'transparent',
+          fill: false, tension: 0.4, pointRadius: 0, borderWidth: 2
+        }
+      ]
+    },
+    options: {
+      ...chartDefaults,
+      scales: {
+        x: chartDefaults.scales.x,
+        y: {
+          ...chartDefaults.scales.y,
+          ticks: {
+            ...chartDefaults.scales.y.ticks,
+            callback: v => fmtMoney(v)
+          }
+        }
+      }
+    }
+  });
+}
+
+function buildContribChart(byCampaign, campaigns, n) {
+  destroyChart('contrib');
+  const ctx = document.getElementById('chart-contrib').getContext('2d');
+  const means = byCampaign.map(arr => mean(Array.from(arr)));
+
+  charts.contrib = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: campaigns.map(c => c.name),
+      datasets: [{
+        label: 'Avg Return',
+        data: means,
+        backgroundColor: campaigns.map(c => c.color + 'bb'),
+        borderColor: campaigns.map(c => c.color),
+        borderWidth: 1.5,
+        borderRadius: 5
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      indexAxis: 'y',
+      plugins: { ...chartDefaults.plugins, legend: { display: false } },
+      scales: {
+        x: {
+          ...chartDefaults.scales.x,
+          ticks: { ...chartDefaults.scales.x.ticks, callback: v => fmtMoney(v) }
+        },
+        y: chartDefaults.scales.y
+      }
+    }
+  });
+}
+
+function buildScatterChart(campaigns) {
+  destroyChart('scatter');
+  const ctx = document.getElementById('chart-scatter').getContext('2d');
+
+  charts.scatter = new Chart(ctx, {
+    type: 'bubble',
+    data: {
+      datasets: campaigns.map(c => ({
+        label: c.name,
+        data: [{ x: c.std * 100, y: c.mean * 100, r: Math.sqrt(c.budget / 500) + 4 }],
+        backgroundColor: c.color + '99',
+        borderColor: c.color,
+        borderWidth: 1.5
+      }))
+    },
+    options: {
+      ...chartDefaults,
+      scales: {
+        x: {
+          ...chartDefaults.scales.x,
+          title: { display: true, text: 'Risk (Std Dev %)', color: '#8b90b4' },
+          ticks: { ...chartDefaults.scales.x.ticks, callback: v => v + '%' }
+        },
+        y: {
+          ...chartDefaults.scales.y,
+          title: { display: true, text: 'Expected Return %', color: '#8b90b4' },
+          ticks: { ...chartDefaults.scales.y.ticks, callback: v => v + '%' }
+        }
+      }
+    }
+  });
+}
+
+function buildCDFChart(totalArr) {
+  destroyChart('cdf');
+  const ctx = document.getElementById('chart-cdf').getContext('2d');
+  const sorted = [...totalArr].sort((a, b) => a - b);
+  const n = sorted.length;
+  const POINTS = 100;
+  const step = Math.ceil(n / POINTS);
+  const labels = [], data = [];
+  for (let i = 0; i < n; i += step) {
+    labels.push(fmtMoney(sorted[i]));
+    data.push(((i / n) * 100).toFixed(1));
+  }
+
+  charts.cdf = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Cumulative probability',
+        data,
+        borderColor: '#ffd93d',
+        backgroundColor: 'rgba(255,217,61,.12)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      scales: {
+        x: {
+          ...chartDefaults.scales.x,
+          ticks: { ...chartDefaults.scales.x.ticks, maxTicksLimit: 8 }
+        },
+        y: {
+          ...chartDefaults.scales.y,
+          ticks: { ...chartDefaults.scales.y.ticks, callback: v => v + '%' },
+          min: 0, max: 100
+        }
+      }
+    }
+  });
+}
+
+// ──────────────────────────────────────────────
+// Campaign UI
+// ──────────────────────────────────────────────
+function renderCampaigns() {
+  const list = document.getElementById('campaigns-list');
+  const totalBudget = campaigns.reduce((s, c) => s + c.budget, 0);
+  document.getElementById('total-budget-display').textContent = fmtMoney(totalBudget);
+
+  list.innerHTML = '';
+  campaigns.forEach((c, i) => {
+    const maxBudget = Math.max(totalBudget * 3, 100000);
+    const card = document.createElement('div');
+    card.className = 'campaign-card';
+    card.innerHTML = `
+      <div class="campaign-header">
+        <div class="campaign-name">
+          <div class="color-dot" style="background:${c.color}"></div>
+          ${c.name}
+        </div>
+        <input class="campaign-budget-input" type="number" value="${c.budget}"
+          min="0" max="${maxBudget}" step="1000" data-idx="${i}" />
+      </div>
+      <input type="range" class="campaign-slider" min="0" max="${maxBudget}"
+        step="1000" value="${c.budget}" data-idx="${i}" />
+      <div class="campaign-meta">
+        <span>μ: <strong>${pct(c.mean)}</strong></span>
+        <span>σ: <strong>${pct(c.std)}</strong></span>
+        <span>Sharpe: <strong>${c.std > 0 ? (c.mean / c.std).toFixed(2) : '—'}</strong></span>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+
+  // Bind slider ↔ number input
+  list.querySelectorAll('.campaign-slider').forEach(el => {
+    el.addEventListener('input', e => {
+      const idx = +e.target.dataset.idx;
+      campaigns[idx].budget = +e.target.value;
+      const inp = list.querySelector(`.campaign-budget-input[data-idx="${idx}"]`);
+      if (inp) inp.value = e.target.value;
+      updateTotalDisplay();
+      debouncedRerun();
+    });
+  });
+
+  list.querySelectorAll('.campaign-budget-input').forEach(el => {
+    el.addEventListener('change', e => {
+      const idx = +e.target.dataset.idx;
+      const val = Math.max(0, +e.target.value);
+      campaigns[idx].budget = val;
+      const slider = list.querySelector(`.campaign-slider[data-idx="${idx}"]`);
+      if (slider) slider.value = val;
+      updateTotalDisplay();
+      debouncedRerun();
+    });
+  });
+}
+
+function updateTotalDisplay() {
+  const total = campaigns.reduce((s, c) => s + c.budget, 0);
+  document.getElementById('total-budget-display').textContent = fmtMoney(total);
+}
+
+// ──────────────────────────────────────────────
+// Debounced re-run (fires after slider settles)
+// ──────────────────────────────────────────────
+let rerunTimer = null;
+function debouncedRerun() {
+  clearTimeout(rerunTimer);
+  rerunTimer = setTimeout(() => {
+    if (campaigns.length) triggerRun();
+  }, 350);
+}
+
+// ──────────────────────────────────────────────
+// Main run
+// ──────────────────────────────────────────────
+function triggerRun() {
+  if (!campaigns.length) return;
+  const nSims    = Math.min(50000, Math.max(500, +document.getElementById('n-sims').value));
+  const nPeriods = Math.min(60,   Math.max(1,   +document.getElementById('n-periods').value));
+  const distType = document.getElementById('dist-type').value;
+
+  // Progress bar
+  const pbWrap = document.getElementById('progress-bar-wrap');
+  const pb = document.getElementById('progress-bar');
+  pbWrap.style.display = 'block';
+  pb.style.width = '30%';
+
+  // Async so UI doesn't freeze
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      pb.style.width = '70%';
+      setTimeout(() => {
+        simResults = runSimulation(campaigns, nSims, nPeriods, distType);
+        pb.style.width = '100%';
+
+        document.getElementById('empty-state').style.display = 'none';
+        document.getElementById('results-area').style.display = 'block';
+        buildCharts(simResults, campaigns, nPeriods);
+
+        document.getElementById('header-status').textContent =
+          `${nSims.toLocaleString()} simulations · ${campaigns.length} campaigns · ${nPeriods} periods`;
+
+        setTimeout(() => { pbWrap.style.display = 'none'; pb.style.width = '0%'; }, 300);
+      }, 10);
+    }, 10);
+  });
+}
+
+// ──────────────────────────────────────────────
+// CSV upload
+// ──────────────────────────────────────────────
+function loadCSVText(text) {
+  try {
+    campaigns = parseCSV(text);
+    renderCampaigns();
+    document.getElementById('run-btn').disabled = false;
+    document.getElementById('upload-label').textContent = `✓ Loaded ${campaigns.length} campaigns`;
+    triggerRun();
+  } catch (e) {
+    alert('CSV parse error: ' + e.message);
+  }
+}
+
+document.getElementById('csv-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => loadCSVText(ev.target.result);
+  reader.readAsText(file);
+});
+
+const zone = document.getElementById('upload-zone');
+zone.addEventListener('click', () => document.getElementById('csv-input').click());
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => loadCSVText(ev.target.result);
+  reader.readAsText(file);
+});
+
+// ──────────────────────────────────────────────
+// Demo data
+// ──────────────────────────────────────────────
+document.getElementById('demo-btn').addEventListener('click', () => {
+  const demo = `campaign,mean_return,std_dev,budget
+Paid Search,0.18,0.12,25000
+Social Media,0.22,0.18,20000
+Email,0.35,0.10,8000
+Display Ads,0.08,0.14,12000
+Content SEO,0.28,0.09,15000
+Influencer,0.15,0.25,10000
+Affiliates,0.20,0.11,18000`;
+  loadCSVText(demo);
+});
+
+// ──────────────────────────────────────────────
+// Run button
+// ──────────────────────────────────────────────
+document.getElementById('run-btn').addEventListener('click', triggerRun);
+
+// Re-run when sim settings change
+['n-sims','n-periods','dist-type'].forEach(id => {
+  document.getElementById(id).addEventListener('change', debouncedRerun);
+});
+</script>
+</body>
+</html>
