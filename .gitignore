@@ -1,5 +1,2 @@
 __pycache__/
 *.pyc
-monte_carlo_results.csv
-monte_carlo_results.png
-monte_carlo_fan_chart.png
