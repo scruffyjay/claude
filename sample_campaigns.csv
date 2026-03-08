@@ -1,8 +1,35 @@
-campaign,mean_return,std_dev,budget
-Paid Search,0.18,0.12,25000
-Social Media,0.22,0.18,20000
-Email,0.35,0.10,8000
-Display Ads,0.08,0.14,12000
-Content SEO,0.28,0.09,15000
-Influencer,0.15,0.25,10000
-Affiliates,0.20,0.11,18000
+campaign,ad_group,keyword,mean_return,std_dev,budget
+Paid Search,Brand,brand exact,0.38,0.07,4000
+Paid Search,Brand,brand phrase,0.32,0.08,2500
+Paid Search,Brand,brand broad,0.25,0.10,1500
+Paid Search,Generic,running shoes,0.18,0.14,6000
+Paid Search,Generic,athletic footwear,0.15,0.16,4000
+Paid Search,Generic,sports shoes,0.12,0.18,3000
+Paid Search,Competitor,vs nike,0.10,0.20,2000
+Paid Search,Competitor,vs adidas,0.08,0.22,1500
+Social Media,Facebook,carousel ads,0.24,0.17,5000
+Social Media,Facebook,video ads,0.28,0.19,4000
+Social Media,Facebook,static ads,0.18,0.14,3000
+Social Media,Instagram,stories,0.30,0.20,4500
+Social Media,Instagram,feed posts,0.22,0.16,3500
+Social Media,Instagram,reels,0.35,0.22,3000
+Email,Newsletter,weekly digest,0.38,0.09,2000
+Email,Newsletter,monthly roundup,0.32,0.08,1500
+Email,Promotional,sale announcements,0.42,0.12,2500
+Email,Promotional,new arrivals,0.38,0.11,2000
+Display Ads,Retargeting,site visitors,0.15,0.13,4000
+Display Ads,Retargeting,cart abandoners,0.22,0.15,3000
+Display Ads,Prospecting,lookalike,0.08,0.18,3000
+Display Ads,Prospecting,interest targeting,0.06,0.20,2000
+Content SEO,Blog,how-to articles,0.30,0.08,3000
+Content SEO,Blog,product reviews,0.28,0.09,2500
+Content SEO,Landing Pages,category pages,0.32,0.07,4000
+Content SEO,Landing Pages,product pages,0.28,0.08,3500
+Influencer,Macro,1M+ followers,0.12,0.28,4000
+Influencer,Macro,500K-1M,0.15,0.25,3000
+Influencer,Micro,10K-100K,0.20,0.22,2000
+Influencer,Micro,1K-10K,0.18,0.20,1000
+Affiliates,Commission,high commission,0.22,0.10,5000
+Affiliates,Commission,standard commission,0.18,0.09,4000
+Affiliates,Content,product reviews,0.25,0.11,3000
+Affiliates,Content,comparison sites,0.20,0.12,2500

@@ -8,1030 +8,1180 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg: #0f1117;
-      --surface: #1a1d27;
-      --surface2: #242736;
-      --border: #2e3148;
-      --accent: #6c63ff;
-      --accent2: #00d4aa;
-      --accent3: #ff6b6b;
-      --accent4: #ffd93d;
-      --text: #e8eaf6;
-      --text-muted: #8b90b4;
-      --radius: 10px;
+      --bg: #0f172a; --surface: #1e293b; --surface2: #273549; --border: #334155;
+      --text: #f1f5f9; --muted: #94a3b8; --accent: #3b82f6; --green: #10b981;
+      --red: #ef4444; --yellow: #f59e0b; --purple: #8b5cf6;
     }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text); height: 100vh; display: flex;
+      flex-direction: column; overflow: hidden; font-size: 14px; }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      font-size: 14px;
-      min-height: 100vh;
-    }
+    /* HEADER */
+    header { display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 1.25rem; background: var(--surface); border-bottom: 1px solid var(--border);
+      flex-shrink: 0; gap: 1rem; }
+    .header-left { display: flex; align-items: center; gap: 1.25rem; min-width: 0; }
+    header h1 { font-size: 1.1rem; font-weight: 700; white-space: nowrap; color: var(--text); }
+    #breadcrumb { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--muted); flex-wrap: wrap; }
+    #breadcrumb .crumb { cursor: pointer; color: var(--accent); transition: opacity 0.15s; }
+    #breadcrumb .crumb:hover { opacity: 0.8; text-decoration: underline; }
+    #breadcrumb .crumb-sep { color: var(--border); }
+    #breadcrumb .crumb-current { color: var(--muted); cursor: default; }
+    .header-right { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+    .btn { padding: 0.45rem 0.9rem; border-radius: 6px; border: 1px solid var(--border);
+      cursor: pointer; font-size: 0.8rem; font-weight: 500; transition: all 0.15s; background: var(--surface2); color: var(--text); }
+    .btn:hover { background: var(--border); }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #2563eb; border-color: #2563eb; }
+    .upload-label { position: relative; }
+    .upload-label input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+    .level-badge { padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+      background: #1d4ed820; border: 1px solid #3b82f640; color: var(--accent); }
 
-    /* ── Header ── */
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 28px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    header h1 { font-size: 18px; font-weight: 700; letter-spacing: .5px; }
-    header span { font-size: 12px; color: var(--text-muted); margin-left: auto; }
+    /* LAYOUT */
+    .layout { display: flex; flex: 1; overflow: hidden; }
+    .dashboard { flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
+    .dashboard::-webkit-scrollbar { width: 6px; }
+    .dashboard::-webkit-scrollbar-track { background: var(--bg); }
+    .dashboard::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-    /* ── Layout ── */
-    .app { display: grid; grid-template-columns: 300px 1fr; min-height: calc(100vh - 57px); }
+    /* SUMMARY CARDS */
+    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1rem 1.1rem; }
+    .card-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 0.4rem; }
+    .card-value { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+    .card-sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+    .card-green .card-value { color: var(--green); }
+    .card-red .card-value { color: var(--red); }
+    .card-blue .card-value { color: var(--accent); }
+    .card-yellow .card-value { color: var(--yellow); }
 
-    /* ── Sidebar ── */
-    .sidebar {
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      overflow-y: auto;
-    }
+    /* CHARTS GRID */
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
+    .chart-card h3 { font-size: 0.8rem; font-weight: 600; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+    .chart-card h3 .drill-hint { font-size: 0.68rem; color: var(--accent); font-weight: 400;
+      text-transform: none; letter-spacing: 0; opacity: 0.8; }
+    .chart-wrap { position: relative; height: 220px; }
+    .chart-wrap canvas { max-height: 220px !important; }
 
-    /* ── Upload zone ── */
-    .upload-zone {
-      border: 2px dashed var(--border);
-      border-radius: var(--radius);
-      padding: 24px 16px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color .2s, background .2s;
-    }
-    .upload-zone:hover, .upload-zone.drag-over {
-      border-color: var(--accent);
-      background: rgba(108,99,255,.08);
-    }
-    .upload-zone input { display: none; }
-    .upload-zone .icon { font-size: 28px; margin-bottom: 8px; }
-    .upload-zone p { color: var(--text-muted); font-size: 12px; margin-top: 6px; }
-    .upload-zone .hint { font-size: 11px; color: var(--text-muted); opacity: .7; margin-top: 4px; }
+    /* TABLE */
+    .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1rem; overflow-x: auto; }
+    .table-card h3 { font-size: 0.8rem; font-weight: 600; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    thead th { text-align: left; padding: 0.5rem 0.75rem; color: var(--muted);
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border); white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; cursor: pointer; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody td { padding: 0.6rem 0.75rem; }
+    .td-name { font-weight: 500; }
+    .td-badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px;
+      font-size: 0.7rem; font-weight: 600; }
+    .badge-green { background: #10b98120; color: var(--green); }
+    .badge-red { background: #ef444420; color: var(--red); }
+    .badge-yellow { background: #f59e0b20; color: var(--yellow); }
+    .bar-bg { background: var(--surface2); border-radius: 4px; height: 6px; overflow: hidden; min-width: 80px; }
+    .bar-fill { height: 100%; border-radius: 4px; background: var(--accent); transition: width 0.4s ease; }
 
-    /* ── Sim controls ── */
-    .section-label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-      margin-bottom: 10px;
-    }
-    .control-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-      gap: 10px;
-    }
-    .control-row label { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
-    .control-row input[type="number"] {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 6px;
-      padding: 5px 8px;
-      width: 90px;
-      font-size: 13px;
-    }
-    .control-row select {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 6px;
-      padding: 5px 8px;
-      font-size: 13px;
-    }
+    /* CHAT PANEL */
+    .chat-panel { width: 360px; display: flex; flex-direction: column; border-left: 1px solid var(--border);
+      background: var(--surface); transition: width 0.25s ease; flex-shrink: 0; overflow: hidden; }
+    .chat-panel.hidden { width: 0; }
+    .chat-header { display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .chat-header span { font-size: 0.85rem; font-weight: 600; }
+    .chat-header-btns { display: flex; gap: 0.5rem; align-items: center; }
+    .chat-clear { font-size: 0.7rem; color: var(--muted); cursor: pointer; background: none; border: none;
+      padding: 0.2rem 0.5rem; border-radius: 4px; transition: background 0.15s; }
+    .chat-clear:hover { background: var(--surface2); color: var(--text); }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.6rem; }
+    .chat-messages::-webkit-scrollbar { width: 4px; }
+    .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .msg { max-width: 92%; padding: 0.65rem 0.85rem; border-radius: 10px; font-size: 0.82rem; line-height: 1.5; }
+    .msg-user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 3px; }
+    .msg-assistant { align-self: flex-start; background: var(--surface2); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
+    .msg-assistant strong { color: var(--accent); }
+    .msg-assistant .mc-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem; }
+    .mc-box { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.75rem; }
+    .mc-box-label { color: var(--muted); font-size: 0.68rem; margin-bottom: 0.2rem; }
+    .mc-box-val { font-weight: 700; }
+    .msg-list { list-style: none; padding: 0; margin: 0.4rem 0 0; display: flex; flex-direction: column; gap: 0.25rem; }
+    .msg-list li { display: flex; gap: 0.4rem; align-items: baseline; }
+    .msg-list .dot { color: var(--accent); flex-shrink: 0; }
+    .chat-suggestions { padding: 0.5rem 0.75rem; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .suggestion { font-size: 0.72rem; padding: 0.3rem 0.65rem; border-radius: 20px; border: 1px solid var(--border);
+      background: var(--surface2); cursor: pointer; color: var(--muted); transition: all 0.15s; white-space: nowrap; }
+    .suggestion:hover { border-color: var(--accent); color: var(--accent); background: #1d4ed810; }
+    .chat-input-area { display: flex; gap: 0.5rem; padding: 0.75rem; border-top: 1px solid var(--border); flex-shrink: 0; }
+    #chatInput { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.55rem 0.75rem; color: var(--text); font-size: 0.82rem; outline: none; transition: border-color 0.15s; }
+    #chatInput:focus { border-color: var(--accent); }
+    #chatInput::placeholder { color: var(--muted); }
+    #chatSend { padding: 0.55rem 0.9rem; background: var(--accent); border: none; border-radius: 8px;
+      color: #fff; cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: background 0.15s; }
+    #chatSend:hover { background: #2563eb; }
 
-    /* ── Budget total ── */
-    .budget-total {
-      background: var(--surface2);
-      border-radius: var(--radius);
-      padding: 12px 14px;
-    }
-    .budget-total-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
-    .budget-total-value { font-size: 22px; font-weight: 700; color: var(--accent); }
+    /* EMPTY STATE */
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 0.75rem; padding: 3rem; color: var(--muted); text-align: center; }
+    .empty-state .icon { font-size: 2.5rem; opacity: 0.5; }
+    .empty-state h2 { font-size: 1rem; color: var(--text); }
+    .empty-state p { font-size: 0.82rem; max-width: 320px; line-height: 1.6; }
 
-    /* ── Campaign sliders ── */
-    #campaigns-panel { flex: 1; overflow-y: auto; }
-    .campaign-card {
-      background: var(--surface2);
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      margin-bottom: 10px;
-    }
-    .campaign-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-    .campaign-name {
-      font-weight: 600;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .color-dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .campaign-budget-input {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 6px;
-      padding: 4px 7px;
-      width: 88px;
-      font-size: 13px;
-      font-weight: 600;
-    }
-    .campaign-slider {
-      width: 100%;
-      accent-color: var(--accent);
-      cursor: pointer;
-      margin-bottom: 6px;
-    }
-    .campaign-meta {
-      display: flex;
-      gap: 12px;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-    .campaign-meta span strong { color: var(--text); }
-
-    /* ── Run button ── */
-    #run-btn {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 11px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      width: 100%;
-      transition: opacity .2s, transform .1s;
-      letter-spacing: .5px;
-    }
-    #run-btn:hover { opacity: .88; }
-    #run-btn:active { transform: scale(.98); }
-    #run-btn:disabled { opacity: .45; cursor: not-allowed; }
-
-    /* ── Main area ── */
-    .main {
-      padding: 22px;
-      display: flex;
-      flex-direction: column;
-      gap: 22px;
-      overflow-y: auto;
-    }
-
-    /* ── Empty / loading states ── */
-    .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      gap: 12px;
-      color: var(--text-muted);
-    }
-    .empty-state .big-icon { font-size: 52px; }
-    .empty-state h2 { font-size: 18px; font-weight: 600; color: var(--text); }
-    .empty-state p { font-size: 13px; text-align: center; max-width: 340px; line-height: 1.6; }
-
-    /* ── Stats bar ── */
-    .stats-bar {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 14px;
-    }
-    .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-    }
-    .stat-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
-    .stat-value { font-size: 22px; font-weight: 700; }
-    .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
-    .pos { color: var(--accent2); }
-    .neg { color: var(--accent3); }
-    .neu { color: var(--accent4); }
-
-    /* ── Charts grid ── */
-    .charts-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 18px;
-    }
-    .chart-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px;
-    }
-    .chart-card.wide { grid-column: 1 / -1; }
-    .chart-title {
-      font-size: 13px;
-      font-weight: 700;
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .chart-title .badge {
-      font-size: 10px;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 20px;
-      background: rgba(108,99,255,.2);
-      color: var(--accent);
-    }
-    .chart-wrap { position: relative; }
-
-    /* ── Progress bar ── */
-    #progress-bar-wrap {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      z-index: 999;
-      display: none;
-    }
-    #progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      width: 0%;
-      transition: width .15s;
-    }
-
-    /* ── Percentile toggles ── */
-    .toggles { display: flex; gap: 8px; flex-wrap: wrap; }
-    .toggle-btn {
-      font-size: 11px;
-      padding: 3px 10px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all .15s;
-    }
-    .toggle-btn.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-    }
-
-    /* ── Responsive ── */
+    /* RESPONSIVE */
     @media (max-width: 900px) {
-      .app { grid-template-columns: 1fr; }
-      .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
       .charts-grid { grid-template-columns: 1fr; }
-      .chart-card.wide { grid-column: 1; }
+      .cards { grid-template-columns: repeat(2, 1fr); }
+      .chat-panel { width: 100%; position: fixed; bottom: 0; left: 0; right: 0; top: auto;
+        height: 60vh; border-top: 1px solid var(--border); border-left: none; z-index: 10; }
+      .chat-panel.hidden { height: 0; }
     }
-
-    /* scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   </style>
 </head>
 <body>
 
-<div id="progress-bar-wrap"><div id="progress-bar"></div></div>
-
 <header>
-  <div style="display:flex;align-items:center;gap:10px">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    <h1>Monte Carlo Budget Dashboard</h1>
+  <div class="header-left">
+    <h1>📊 Monte Carlo Dashboard</h1>
+    <nav id="breadcrumb"></nav>
   </div>
-  <span id="header-status">Upload a CSV to begin</span>
+  <div class="header-right">
+    <span id="levelBadge" class="level-badge">Campaign View</span>
+    <label class="btn upload-label">
+      📂 Upload CSV
+      <input type="file" id="fileInput" accept=".csv" />
+    </label>
+    <button class="btn btn-primary" id="chatToggle">💬 Chat</button>
+  </div>
 </header>
 
-<div class="app">
-  <!-- ── Sidebar ── -->
-  <aside class="sidebar">
-
-    <!-- Upload -->
-    <div>
-      <div class="section-label">Data Source</div>
-      <div class="upload-zone" id="upload-zone">
-        <input type="file" id="csv-input" accept=".csv" />
-        <div class="icon">📂</div>
-        <div id="upload-label" style="font-weight:600">Drop CSV or click to upload</div>
-        <p>campaign_name, mean_return, std_dev, [budget]</p>
-        <p class="hint">or historical columns per campaign</p>
+<div class="layout">
+  <div class="dashboard" id="dashboard">
+    <div id="emptyState" class="empty-state" style="display:none;">
+      <div class="icon">📊</div>
+      <h2>No Data Loaded</h2>
+      <p>Upload a CSV file with columns: <strong>campaign, ad_group, keyword, mean_return, std_dev, budget</strong></p>
+    </div>
+    <div class="cards" id="summaryCards"></div>
+    <div class="charts-grid" id="chartsGrid">
+      <div class="chart-card">
+        <h3>Budget Allocation <span class="drill-hint" id="drillHint">▶ Click bar to drill down</span></h3>
+        <div class="chart-wrap"><canvas id="budgetChart"></canvas></div>
       </div>
-      <div style="margin-top:8px;text-align:center">
-        <button id="demo-btn" style="font-size:11px;background:none;border:none;color:var(--accent);cursor:pointer;text-decoration:underline">Load demo data</button>
+      <div class="chart-card">
+        <h3>Monte Carlo Distribution <span class="drill-hint" style="color:var(--muted)">2000 simulations</span></h3>
+        <div class="chart-wrap"><canvas id="mcChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Risk vs Return</h3>
+        <div class="chart-wrap"><canvas id="scatterChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Sharpe Ratio Ranking</h3>
+        <div class="chart-wrap"><canvas id="sharpeChart"></canvas></div>
       </div>
     </div>
+    <div class="table-card">
+      <h3 id="tableTitle">Performance Summary</h3>
+      <table id="dataTable"></table>
+    </div>
+  </div>
 
-    <!-- Sim settings -->
-    <div>
-      <div class="section-label">Simulation Settings</div>
-      <div class="control-row">
-        <label>Simulations</label>
-        <input type="number" id="n-sims" value="5000" min="500" max="50000" step="500" />
-      </div>
-      <div class="control-row">
-        <label>Periods</label>
-        <input type="number" id="n-periods" value="12" min="1" max="60" />
-      </div>
-      <div class="control-row">
-        <label>Distribution</label>
-        <select id="dist-type">
-          <option value="normal">Normal</option>
-          <option value="lognormal">Log-normal</option>
-          <option value="uniform">Uniform</option>
-        </select>
+  <div class="chat-panel hidden" id="chatPanel">
+    <div class="chat-header">
+      <span>💬 Budget AI Assistant</span>
+      <div class="chat-header-btns">
+        <button class="chat-clear" id="chatClear">Clear</button>
+        <button class="btn" id="chatClose" style="padding:0.3rem 0.6rem;font-size:0.75rem;">✕</button>
       </div>
     </div>
-
-    <!-- Total budget -->
-    <div>
-      <div class="section-label">Total Budget</div>
-      <div class="budget-total">
-        <div class="budget-total-label">Allocated</div>
-        <div class="budget-total-value" id="total-budget-display">$0</div>
-      </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-suggestions" id="chatSuggestions"></div>
+    <div class="chat-input-area">
+      <input type="text" id="chatInput" placeholder="Ask about budgets, what-if scenarios…" />
+      <button id="chatSend">Send</button>
     </div>
-
-    <!-- Campaign sliders -->
-    <div id="campaigns-panel">
-      <div class="section-label">Budget Allocation</div>
-      <div id="campaigns-list">
-        <p style="color:var(--text-muted);font-size:12px;">Load data to see campaigns</p>
-      </div>
-    </div>
-
-    <button id="run-btn" disabled>▶ Run Simulation</button>
-
-  </aside>
-
-  <!-- ── Main ── -->
-  <main class="main" id="main-content">
-    <div class="empty-state" id="empty-state">
-      <div class="big-icon">📊</div>
-      <h2>No simulation yet</h2>
-      <p>Upload a CSV with campaign data or load the demo, then hit <strong>Run Simulation</strong> to see interactive Monte Carlo results.</p>
-      <p style="margin-top:8px;font-size:12px;background:var(--surface2);padding:10px 14px;border-radius:8px;text-align:left">
-        <strong>Expected CSV format:</strong><br>
-        <code style="color:var(--accent2)">campaign,mean_return,std_dev,budget</code><br>
-        <em>or historical format:</em><br>
-        <code style="color:var(--accent2)">period,Campaign_A,Campaign_B,...</code>
-      </p>
-    </div>
-
-    <div id="results-area" style="display:none">
-      <!-- Stats -->
-      <div class="stats-bar" id="stats-bar"></div>
-
-      <!-- Charts -->
-      <div class="charts-grid">
-        <div class="chart-card wide">
-          <div class="chart-title">
-            Return Distribution (all simulations)
-            <div class="toggles" id="dist-toggles"></div>
-          </div>
-          <div class="chart-wrap" style="height:220px"><canvas id="chart-dist"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-title">
-            Cumulative Return Paths
-            <span class="badge">P10 / P50 / P90</span>
-          </div>
-          <div class="chart-wrap" style="height:200px"><canvas id="chart-paths"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-title">
-            Campaign Contribution
-            <span class="badge">Expected Return</span>
-          </div>
-          <div class="chart-wrap" style="height:200px"><canvas id="chart-contrib"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-title">
-            Risk / Return by Campaign
-            <span class="badge">Bubble = Budget</span>
-          </div>
-          <div class="chart-wrap" style="height:200px"><canvas id="chart-scatter"></canvas></div>
-        </div>
-        <div class="chart-card wide">
-          <div class="chart-title">
-            Probability of Exceeding Target Return
-            <span class="badge">Cumulative Distribution</span>
-          </div>
-          <div class="chart-wrap" style="height:180px"><canvas id="chart-cdf"></canvas></div>
-        </div>
-      </div>
-    </div>
-  </main>
+  </div>
 </div>
 
 <script>
-// ──────────────────────────────────────────────
-// Constants & palette
-// ──────────────────────────────────────────────
-const PALETTE = [
-  '#6c63ff','#00d4aa','#ff6b6b','#ffd93d','#4ecdc4',
-  '#a29bfe','#fd79a8','#55efc4','#fdcb6e','#74b9ff',
-  '#e17055','#81ecec','#fab1a0','#b2bec3','#dfe6e9'
+// ============================================================
+//  CONSTANTS & DEFAULTS
+// ============================================================
+const CHART_COLORS = [
+  '#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444',
+  '#06b6d4','#ec4899','#84cc16','#f97316','#6366f1',
 ];
+const N_SIMS = 2000;
+const DEFAULT_CSV = `campaign,ad_group,keyword,mean_return,std_dev,budget
+Paid Search,Brand,brand exact,0.38,0.07,4000
+Paid Search,Brand,brand phrase,0.32,0.08,2500
+Paid Search,Brand,brand broad,0.25,0.10,1500
+Paid Search,Generic,running shoes,0.18,0.14,6000
+Paid Search,Generic,athletic footwear,0.15,0.16,4000
+Paid Search,Generic,sports shoes,0.12,0.18,3000
+Paid Search,Competitor,vs nike,0.10,0.20,2000
+Paid Search,Competitor,vs adidas,0.08,0.22,1500
+Social Media,Facebook,carousel ads,0.24,0.17,5000
+Social Media,Facebook,video ads,0.28,0.19,4000
+Social Media,Facebook,static ads,0.18,0.14,3000
+Social Media,Instagram,stories,0.30,0.20,4500
+Social Media,Instagram,feed posts,0.22,0.16,3500
+Social Media,Instagram,reels,0.35,0.22,3000
+Email,Newsletter,weekly digest,0.38,0.09,2000
+Email,Newsletter,monthly roundup,0.32,0.08,1500
+Email,Promotional,sale announcements,0.42,0.12,2500
+Email,Promotional,new arrivals,0.38,0.11,2000
+Display Ads,Retargeting,site visitors,0.15,0.13,4000
+Display Ads,Retargeting,cart abandoners,0.22,0.15,3000
+Display Ads,Prospecting,lookalike,0.08,0.18,3000
+Display Ads,Prospecting,interest targeting,0.06,0.20,2000
+Content SEO,Blog,how-to articles,0.30,0.08,3000
+Content SEO,Blog,product reviews,0.28,0.09,2500
+Content SEO,Landing Pages,category pages,0.32,0.07,4000
+Content SEO,Landing Pages,product pages,0.28,0.08,3500
+Influencer,Macro,1M+ followers,0.12,0.28,4000
+Influencer,Macro,500K-1M,0.15,0.25,3000
+Influencer,Micro,10K-100K,0.20,0.22,2000
+Influencer,Micro,1K-10K,0.18,0.20,1000
+Affiliates,Commission,high commission,0.22,0.10,5000
+Affiliates,Commission,standard commission,0.18,0.09,4000
+Affiliates,Content,product reviews,0.25,0.11,3000
+Affiliates,Content,comparison sites,0.20,0.12,2500`;
 
-let campaigns = [];     // [{name, mean, std, budget, color}]
-let simResults = null;  // [{totals[], byPeriod[], byCampaign[]}]
-let charts = {};
+// ============================================================
+//  DATA LAYER
+// ============================================================
+let rawData = [];
 
-// ──────────────────────────────────────────────
-// Utility
-// ──────────────────────────────────────────────
-const fmt = (n, digits = 0) =>
-  n == null ? '—' : (n >= 0 ? '+' : '') +
-  n.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
-
-const fmtMoney = v =>
-  '$' + Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 0 });
-
-const pct = n => (n * 100).toFixed(1) + '%';
-
-// Box-Muller normal random
-function randn() {
-  let u, v;
-  do { u = Math.random(); v = Math.random(); } while (u === 0);
-  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+function loadCSV(text) {
+  const result = Papa.parse(text.trim(), { header: true, skipEmptyLines: true, dynamicTyping: true });
+  rawData = result.data.filter(r => r.campaign && r.budget > 0);
+  navigateTo('campaign');
 }
 
-function sampleReturn(mean, std, dist) {
-  switch (dist) {
-    case 'lognormal': {
-      const mu = Math.log(mean * mean / Math.sqrt(std * std + mean * mean));
-      const sigma = Math.sqrt(Math.log(1 + (std * std) / (mean * mean)));
-      return Math.exp(mu + sigma * randn()) - 1;
+function aggregateRows(rows) {
+  const total = rows.reduce((s, r) => s + r.budget, 0);
+  const mean = rows.reduce((s, r) => s + r.mean_return * r.budget, 0) / total;
+  const variance = rows.reduce((s, r) => s + Math.pow(r.budget / total, 2) * Math.pow(r.std_dev, 2), 0);
+  return { mean_return: mean, std_dev: Math.sqrt(variance), budget: total };
+}
+
+function getCampaignData() {
+  const map = new Map();
+  for (const r of rawData) {
+    if (!map.has(r.campaign)) map.set(r.campaign, []);
+    map.get(r.campaign).push(r);
+  }
+  return Array.from(map.entries()).map(([name, rows]) => ({ name, ...aggregateRows(rows) }));
+}
+
+function getAdGroupData(campaign) {
+  const rows = rawData.filter(r => r.campaign === campaign);
+  const map = new Map();
+  for (const r of rows) {
+    if (!map.has(r.ad_group)) map.set(r.ad_group, []);
+    map.get(r.ad_group).push(r);
+  }
+  return Array.from(map.entries()).map(([name, rows]) => ({ name, ...aggregateRows(rows) }));
+}
+
+function getKeywordData(campaign, adGroup) {
+  return rawData
+    .filter(r => r.campaign === campaign && r.ad_group === adGroup)
+    .map(r => ({ name: r.keyword, mean_return: r.mean_return, std_dev: r.std_dev, budget: r.budget }));
+}
+
+// Lookup helpers
+function allCampaigns() { return [...new Set(rawData.map(r => r.campaign))]; }
+function allAdGroups() { return [...new Set(rawData.map(r => r.ad_group))]; }
+function allKeywords() { return rawData.map(r => r.keyword); }
+function adGroupsForCampaign(c) { return [...new Set(rawData.filter(r => r.campaign === c).map(r => r.ad_group))]; }
+function keywordsForAdGroup(c, ag) { return rawData.filter(r => r.campaign === c && r.ad_group === ag).map(r => r.keyword); }
+function campaignOfAdGroup(ag) { const r = rawData.find(r => r.ad_group === ag); return r ? r.campaign : null; }
+
+// ============================================================
+//  MONTE CARLO ENGINE
+// ============================================================
+function normalRandom() {
+  let u1;
+  do { u1 = Math.random(); } while (u1 === 0);
+  const u2 = Math.random();
+  return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+}
+
+function runMonteCarlo(entities, n = N_SIMS) {
+  const total = entities.reduce((s, e) => s + e.budget, 0);
+  const w = entities.map(e => e.budget / total);
+  const out = new Array(n);
+  for (let i = 0; i < n; i++) {
+    let r = 0;
+    for (let j = 0; j < entities.length; j++) {
+      r += (entities[j].mean_return + entities[j].std_dev * normalRandom()) * w[j];
     }
-    case 'uniform': {
-      const lo = mean - std * Math.sqrt(3);
-      const hi = mean + std * std * Math.sqrt(3);
-      return lo + Math.random() * (hi - lo);
-    }
-    default: return mean + std * randn();
+    out[i] = r;
   }
+  out.sort((a, b) => a - b);
+  return out;
 }
 
-function percentile(arr, p) {
-  const s = [...arr].sort((a, b) => a - b);
-  const idx = (p / 100) * (s.length - 1);
-  const lo = Math.floor(idx), hi = Math.ceil(idx);
-  return s[lo] + (s[hi] - s[lo]) * (idx - lo);
+function pct(arr, p) {
+  return arr[Math.max(0, Math.min(arr.length - 1, Math.floor(arr.length * p / 100)))];
 }
 
-function mean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
+function mcStats(mc) {
+  const p10 = pct(mc, 10), p50 = pct(mc, 50), p90 = pct(mc, 90);
+  const pLoss = mc.filter(v => v < 0).length / mc.length;
+  return { p10, p50, p90, pLoss };
+}
 
-// ──────────────────────────────────────────────
-// CSV parsing
-// ──────────────────────────────────────────────
-function parseCSV(text) {
-  const { data, errors } = Papa.parse(text.trim(), {
-    header: true, dynamicTyping: true, skipEmptyLines: true
-  });
-  if (errors.length && data.length === 0) throw new Error(errors[0].message);
+function buildHistogram(sorted, bins = 40) {
+  const min = sorted[0], max = sorted[sorted.length - 1];
+  const w = (max - min) / bins || 0.01;
+  const counts = new Array(bins).fill(0);
+  const midpoints = Array.from({ length: bins }, (_, i) => min + (i + 0.5) * w);
+  for (const v of sorted) counts[Math.min(bins - 1, Math.floor((v - min) / w))]++;
+  return { counts, midpoints, zero: (0 - min) / w };
+}
 
-  const cols = Object.keys(data[0]).map(k => k.trim().toLowerCase());
+// ============================================================
+//  STATE & NAVIGATION
+// ============================================================
+let state = { level: 'campaign', campaign: null, adGroup: null, entities: [], mc: [] };
+let chartInstances = {};
 
-  // ── Summary format: campaign, mean_return, std_dev, [budget]
-  if (cols.some(c => c.includes('mean') || c.includes('return')) &&
-      cols.some(c => c.includes('std') || c.includes('dev'))) {
-    return parseSummaryFormat(data, cols);
+function navigateTo(level, campaign = null, adGroup = null) {
+  state.level = level;
+  state.campaign = campaign;
+  state.adGroup = adGroup;
+
+  if (level === 'campaign')       state.entities = getCampaignData();
+  else if (level === 'ad_group')  state.entities = getAdGroupData(campaign);
+  else                            state.entities = getKeywordData(campaign, adGroup);
+
+  state.mc = runMonteCarlo(state.entities);
+
+  renderBreadcrumb();
+  renderLevelBadge();
+  renderSummaryCards(state.entities, state.mc);
+  renderCharts(state.entities, state.mc);
+  renderTable(state.entities, state.mc);
+  updateChatSuggestions();
+}
+
+function renderBreadcrumb() {
+  const el = document.getElementById('breadcrumb');
+  const parts = [];
+  if (state.level === 'campaign') {
+    parts.push(`<span class="crumb-current">All Campaigns</span>`);
+  } else if (state.level === 'ad_group') {
+    parts.push(`<span class="crumb" onclick="navigateTo('campaign')">All Campaigns</span>`);
+    parts.push(`<span class="crumb-sep">›</span>`);
+    parts.push(`<span class="crumb-current">${state.campaign}</span>`);
+  } else {
+    parts.push(`<span class="crumb" onclick="navigateTo('campaign')">All Campaigns</span>`);
+    parts.push(`<span class="crumb-sep">›</span>`);
+    parts.push(`<span class="crumb" onclick="navigateTo('ad_group','${esc(state.campaign)}')">${state.campaign}</span>`);
+    parts.push(`<span class="crumb-sep">›</span>`);
+    parts.push(`<span class="crumb-current">${state.adGroup}</span>`);
   }
-
-  // ── Historical format: period column + one column per campaign
-  return parseHistoricalFormat(data, cols);
+  el.innerHTML = parts.join(' ');
+  const hint = document.getElementById('drillHint');
+  if (hint) hint.style.display = state.level === 'keyword' ? 'none' : '';
 }
 
-function parseSummaryFormat(data, cols) {
-  const nameKey  = Object.keys(data[0]).find(k => /name|campaign|channel/i.test(k));
-  const meanKey  = Object.keys(data[0]).find(k => /mean|avg|return/i.test(k));
-  const stdKey   = Object.keys(data[0]).find(k => /std|dev|sigma/i.test(k));
-  const budKey   = Object.keys(data[0]).find(k => /budget|spend|alloc/i.test(k));
-
-  if (!meanKey || !stdKey) throw new Error('Could not detect mean/std columns');
-
-  return data.map((row, i) => ({
-    name:   String(row[nameKey] || `Campaign ${i + 1}`).trim(),
-    mean:   Number(row[meanKey]),
-    std:    Number(row[stdKey]),
-    budget: budKey ? Number(row[budKey]) : 10000,
-    color:  PALETTE[i % PALETTE.length]
-  }));
+function renderLevelBadge() {
+  const labels = { campaign: 'Campaign View', ad_group: 'Ad Group View', keyword: 'Keyword View' };
+  document.getElementById('levelBadge').textContent = labels[state.level];
 }
 
-function parseHistoricalFormat(data, cols) {
-  // First column treated as period index; rest are campaigns
-  const skip = /period|date|month|week|time|index/i;
-  const campaignKeys = Object.keys(data[0]).filter(k => !skip.test(k));
-  if (campaignKeys.length === 0) throw new Error('No campaign columns found');
+// ============================================================
+//  FORMATTING
+// ============================================================
+function fmtPct(v, decimals = 1) { return (v * 100).toFixed(decimals) + '%'; }
+function fmtUSD(v) { return '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 }); }
+function fmtSharpe(v) { return v.toFixed(2); }
+function sharpe(e) { return e.std_dev > 0 ? e.mean_return / e.std_dev : 0; }
+function esc(s) { return (s || '').replace(/'/g, "\\'"); }
 
-  return campaignKeys.map((key, i) => {
-    const vals = data.map(r => Number(r[key])).filter(v => !isNaN(v));
-    const mu = mean(vals);
-    const sigma = Math.sqrt(vals.reduce((s, v) => s + (v - mu) ** 2, 0) / vals.length);
-    return {
-      name:   key.trim(),
-      mean:   mu,
-      std:    sigma,
-      budget: 10000,
-      color:  PALETTE[i % PALETTE.length]
-    };
-  });
+function riskLabel(std) {
+  if (std < 0.10) return ['Low Risk', 'badge-green'];
+  if (std < 0.18) return ['Med Risk', 'badge-yellow'];
+  return ['High Risk', 'badge-red'];
 }
 
-// ──────────────────────────────────────────────
-// Simulation
-// ──────────────────────────────────────────────
-function runSimulation(campaigns, nSims, nPeriods, distType) {
-  const totals   = new Float64Array(nSims);
-  const byPeriod = Array.from({ length: nPeriods }, () => new Float64Array(nSims));
-  const byCampaign = campaigns.map(() => new Float64Array(nSims));
+// ============================================================
+//  SUMMARY CARDS
+// ============================================================
+function renderSummaryCards(entities, mc) {
+  const totalBudget = entities.reduce((s, e) => s + e.budget, 0);
+  const { p10, p50, p90, pLoss } = mcStats(mc);
+  const bestEntity = entities.reduce((best, e) => e.mean_return > best.mean_return ? e : best, entities[0]);
 
-  for (let s = 0; s < nSims; s++) {
-    let cumulative = 0;
-    for (let p = 0; p < nPeriods; p++) {
-      let periodTotal = 0;
-      campaigns.forEach((c, ci) => {
-        const r = sampleReturn(c.mean, c.std, distType);
-        const ret = c.budget * r;
-        periodTotal += ret;
-        byCampaign[ci][s] += ret;
-      });
-      cumulative += periodTotal;
-      byPeriod[p][s] = cumulative;
-    }
-    totals[s] = cumulative;
-  }
-
-  return { totals, byPeriod, byCampaign };
+  document.getElementById('summaryCards').innerHTML = `
+    <div class="card card-blue">
+      <div class="card-label">Total Budget</div>
+      <div class="card-value">${fmtUSD(totalBudget)}</div>
+      <div class="card-sub">${entities.length} ${state.level === 'keyword' ? 'keywords' : state.level === 'ad_group' ? 'ad groups' : 'campaigns'}</div>
+    </div>
+    <div class="card card-green">
+      <div class="card-label">Expected Return (P50)</div>
+      <div class="card-value">${fmtPct(p50)}</div>
+      <div class="card-sub">P10: ${fmtPct(p10)} · P90: ${fmtPct(p90)}</div>
+    </div>
+    <div class="card ${pLoss > 0.2 ? 'card-red' : pLoss > 0.1 ? 'card-yellow' : 'card-green'}">
+      <div class="card-label">Prob. of Loss</div>
+      <div class="card-value">${fmtPct(pLoss, 0)}</div>
+      <div class="card-sub">${pLoss < 0.05 ? 'Very safe' : pLoss < 0.15 ? 'Acceptable risk' : 'High risk'}</div>
+    </div>
+    <div class="card card-yellow">
+      <div class="card-label">Top Performer</div>
+      <div class="card-value" style="font-size:1rem;line-height:1.3;">${bestEntity ? bestEntity.name : '—'}</div>
+      <div class="card-sub">${bestEntity ? fmtPct(bestEntity.mean_return) + ' expected' : ''}</div>
+    </div>`;
 }
 
-// ──────────────────────────────────────────────
-// Chart helpers
-// ──────────────────────────────────────────────
-const chartDefaults = {
-  responsive: true,
-  maintainAspectRatio: false,
-  animation: { duration: 400 },
-  plugins: {
-    legend: { labels: { color: '#8b90b4', font: { size: 11 } } },
-    tooltip: { mode: 'index', intersect: false }
-  },
-  scales: {
-    x: { ticks: { color: '#8b90b4', font: { size: 10 } }, grid: { color: '#2e3148' } },
-    y: { ticks: { color: '#8b90b4', font: { size: 10 } }, grid: { color: '#2e3148' } }
-  }
-};
-
+// ============================================================
+//  CHARTS
+// ============================================================
 function destroyChart(id) {
-  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+  if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
 }
 
-function buildCharts(results, campaigns, nPeriods) {
-  const { totals, byPeriod, byCampaign } = results;
-  const n = totals.length;
-  const totalArr = Array.from(totals);
-  const mu = mean(totalArr);
-
-  // ── Stats
-  const statsEl = document.getElementById('stats-bar');
-  const p10 = percentile(totalArr, 10);
-  const p50 = percentile(totalArr, 50);
-  const p90 = percentile(totalArr, 90);
-  const probPos = totalArr.filter(v => v > 0).length / n;
-  const totalBudget = campaigns.reduce((s, c) => s + c.budget, 0) * nPeriods;
-  const roi = mu / (totalBudget || 1);
-
-  statsEl.innerHTML = `
-    <div class="stat-card"><div class="stat-label">Expected Return</div>
-      <div class="stat-value ${mu >= 0 ? 'pos' : 'neg'}">${fmtMoney(mu)}</div>
-      <div class="stat-sub">mean of ${n.toLocaleString()} sims</div></div>
-    <div class="stat-card"><div class="stat-label">P10 / P50 / P90</div>
-      <div class="stat-value neu" style="font-size:15px">${fmtMoney(p10)} / ${fmtMoney(p50)} / ${fmtMoney(p90)}</div>
-      <div class="stat-sub">percentile range</div></div>
-    <div class="stat-card"><div class="stat-label">Prob. of Profit</div>
-      <div class="stat-value ${probPos > 0.5 ? 'pos' : 'neg'}">${pct(probPos)}</div>
-      <div class="stat-sub">of simulations</div></div>
-    <div class="stat-card"><div class="stat-label">Expected ROI</div>
-      <div class="stat-value ${roi >= 0 ? 'pos' : 'neg'}">${pct(roi)}</div>
-      <div class="stat-sub">vs total budget spend</div></div>
-  `;
-
-  // ── 1. Distribution histogram
-  buildDistChart(totalArr, n);
-
-  // ── 2. Cumulative paths (P10/P50/P90 by period)
-  buildPathsChart(byPeriod, nPeriods);
-
-  // ── 3. Campaign contribution bar
-  buildContribChart(byCampaign, campaigns, n);
-
-  // ── 4. Risk/Return scatter
-  buildScatterChart(campaigns);
-
-  // ── 5. CDF
-  buildCDFChart(totalArr);
+function renderCharts(entities, mc) {
+  renderBudgetChart(entities);
+  renderMCChart(mc, entities);
+  renderScatterChart(entities);
+  renderSharpeChart(entities);
 }
 
-function buildDistChart(totalArr, n) {
-  destroyChart('dist');
-  const sorted = [...totalArr].sort((a, b) => a - b);
-  const lo = percentile(sorted, 1), hi = percentile(sorted, 99);
-  const BINS = 60;
-  const step = (hi - lo) / BINS;
-  const bins = Array.from({ length: BINS }, (_, i) => ({
-    x: lo + i * step + step / 2,
-    y: 0
-  }));
-  sorted.forEach(v => {
-    const idx = Math.min(BINS - 1, Math.max(0, Math.floor((v - lo) / step)));
-    bins[idx].y++;
-  });
-  const maxBin = Math.max(...bins.map(b => b.y));
-
-  const ctx = document.getElementById('chart-dist').getContext('2d');
-  charts.dist = new Chart(ctx, {
+function renderBudgetChart(entities) {
+  destroyChart('budget');
+  const ctx = document.getElementById('budgetChart').getContext('2d');
+  const colors = entities.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]);
+  chartInstances.budget = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: bins.map(b => fmtMoney(b.x)),
+      labels: entities.map(e => e.name),
       datasets: [{
-        label: 'Frequency',
-        data: bins.map(b => b.y),
-        backgroundColor: bins.map(b =>
-          b.x < 0 ? 'rgba(255,107,107,0.65)' : 'rgba(108,99,255,0.65)'
-        ),
-        borderWidth: 0,
-        barPercentage: 1,
-        categoryPercentage: 1
+        label: 'Budget',
+        data: entities.map(e => e.budget),
+        backgroundColor: colors.map(c => c + 'cc'),
+        borderColor: colors,
+        borderWidth: 1.5,
+        borderRadius: 4,
       }]
     },
     options: {
-      ...chartDefaults,
+      responsive: true, maintainAspectRatio: false,
+      onClick: (_, elements) => {
+        if (!elements.length) return;
+        const name = entities[elements[0].index].name;
+        if (state.level === 'campaign') navigateTo('ad_group', name);
+        else if (state.level === 'ad_group') navigateTo('keyword', state.campaign, name);
+      },
       plugins: {
-        ...chartDefaults.plugins,
         legend: { display: false },
-        annotation: {}
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${fmtUSD(ctx.raw)}  (${fmtPct(ctx.raw / entities.reduce((s, e) => s + e.budget, 0))})`,
+            afterLabel: ctx => ` Expected: ${fmtPct(entities[ctx.dataIndex].mean_return)}`
+          }
+        }
       },
       scales: {
-        x: {
-          ...chartDefaults.scales.x,
-          ticks: {
-            ...chartDefaults.scales.x.ticks,
-            maxTicksLimit: 8,
-            callback: (_, i) => i % 8 === 0 ? fmtMoney(bins[i]?.x ?? 0) : ''
-          }
-        },
-        y: { ...chartDefaults.scales.y, display: false }
-      }
+        x: { ticks: { color: '#94a3b8', font: { size: 10 }, maxRotation: 30 }, grid: { color: '#334155' } },
+        y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => fmtUSD(v) }, grid: { color: '#334155' } }
+      },
+      cursor: state.level !== 'keyword' ? 'pointer' : 'default',
     }
   });
 }
 
-function buildPathsChart(byPeriod, nPeriods) {
-  destroyChart('paths');
-  const labels = Array.from({ length: nPeriods }, (_, i) => `P${i + 1}`);
-  const p10s = byPeriod.map(arr => percentile(Array.from(arr), 10));
-  const p50s = byPeriod.map(arr => percentile(Array.from(arr), 50));
-  const p90s = byPeriod.map(arr => percentile(Array.from(arr), 90));
+function renderMCChart(mc, entities) {
+  destroyChart('mc');
+  const ctx = document.getElementById('mcChart').getContext('2d');
+  const { counts, midpoints, zero } = buildHistogram(mc, 40);
+  const zeroBin = Math.floor(zero);
+  const colors = midpoints.map((_, i) => i < zeroBin ? '#ef4444aa' : '#10b981aa');
+  const borderColors = midpoints.map((_, i) => i < zeroBin ? '#ef4444' : '#10b981');
+  const { p10, p50, p90 } = mcStats(mc);
 
-  const ctx = document.getElementById('chart-paths').getContext('2d');
-  charts.paths = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'P90', data: p90s,
-          borderColor: '#00d4aa', backgroundColor: 'rgba(0,212,170,.1)',
-          fill: '+1', tension: 0.4, pointRadius: 0, borderWidth: 2
-        },
-        {
-          label: 'P50', data: p50s,
-          borderColor: '#6c63ff', backgroundColor: 'rgba(108,99,255,.15)',
-          fill: '+1', tension: 0.4, pointRadius: 2, borderWidth: 2.5
-        },
-        {
-          label: 'P10', data: p10s,
-          borderColor: '#ff6b6b', backgroundColor: 'transparent',
-          fill: false, tension: 0.4, pointRadius: 0, borderWidth: 2
-        }
-      ]
-    },
-    options: {
-      ...chartDefaults,
-      scales: {
-        x: chartDefaults.scales.x,
-        y: {
-          ...chartDefaults.scales.y,
-          ticks: {
-            ...chartDefaults.scales.y.ticks,
-            callback: v => fmtMoney(v)
-          }
-        }
-      }
-    }
-  });
-}
-
-function buildContribChart(byCampaign, campaigns, n) {
-  destroyChart('contrib');
-  const ctx = document.getElementById('chart-contrib').getContext('2d');
-  const means = byCampaign.map(arr => mean(Array.from(arr)));
-
-  charts.contrib = new Chart(ctx, {
+  chartInstances.mc = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: campaigns.map(c => c.name),
+      labels: midpoints.map(v => fmtPct(v)),
       datasets: [{
-        label: 'Avg Return',
-        data: means,
-        backgroundColor: campaigns.map(c => c.color + 'bb'),
-        borderColor: campaigns.map(c => c.color),
-        borderWidth: 1.5,
-        borderRadius: 5
+        data: counts,
+        backgroundColor: colors,
+        borderColor: borderColors,
+        borderWidth: 1,
+        borderRadius: 2,
       }]
     },
     options: {
-      ...chartDefaults,
-      indexAxis: 'y',
-      plugins: { ...chartDefaults.plugins, legend: { display: false } },
-      scales: {
-        x: {
-          ...chartDefaults.scales.x,
-          ticks: { ...chartDefaults.scales.x.ticks, callback: v => fmtMoney(v) }
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => `Return: ${ctx[0].label}`,
+            label: ctx => ` Frequency: ${ctx.raw} / ${mc.length}`
+          }
         },
-        y: chartDefaults.scales.y
+        annotation: {
+          annotations: {
+            p50: { type: 'line', xMin: midpoints.findIndex(v => v >= p50) - 0.5, xMax: midpoints.findIndex(v => v >= p50) - 0.5,
+              borderColor: '#3b82f6', borderWidth: 2, borderDash: [4, 3],
+              label: { display: true, content: `P50: ${fmtPct(p50)}`, color: '#3b82f6', font: { size: 10 }, position: 'start' } }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#94a3b8', font: { size: 9 }, maxTicksLimit: 8 }, grid: { display: false } },
+        y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#334155' } }
       }
     }
   });
 }
 
-function buildScatterChart(campaigns) {
+function renderScatterChart(entities) {
   destroyChart('scatter');
-  const ctx = document.getElementById('chart-scatter').getContext('2d');
+  const ctx = document.getElementById('scatterChart').getContext('2d');
+  const maxBudget = Math.max(...entities.map(e => e.budget));
 
-  charts.scatter = new Chart(ctx, {
+  const datasets = entities.map((e, i) => ({
+    label: e.name,
+    data: [{ x: e.std_dev * 100, y: e.mean_return * 100, r: Math.max(5, Math.sqrt(e.budget / maxBudget) * 22) }],
+    backgroundColor: CHART_COLORS[i % CHART_COLORS.length] + '99',
+    borderColor: CHART_COLORS[i % CHART_COLORS.length],
+    borderWidth: 1.5,
+  }));
+
+  chartInstances.scatter = new Chart(ctx, {
     type: 'bubble',
-    data: {
-      datasets: campaigns.map(c => ({
-        label: c.name,
-        data: [{ x: c.std * 100, y: c.mean * 100, r: Math.sqrt(c.budget / 500) + 4 }],
-        backgroundColor: c.color + '99',
-        borderColor: c.color,
-        borderWidth: 1.5
-      }))
-    },
+    data: { datasets },
     options: {
-      ...chartDefaults,
-      scales: {
-        x: {
-          ...chartDefaults.scales.x,
-          title: { display: true, text: 'Risk (Std Dev %)', color: '#8b90b4' },
-          ticks: { ...chartDefaults.scales.x.ticks, callback: v => v + '%' }
-        },
-        y: {
-          ...chartDefaults.scales.y,
-          title: { display: true, text: 'Expected Return %', color: '#8b90b4' },
-          ticks: { ...chartDefaults.scales.y.ticks, callback: v => v + '%' }
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: entities.length <= 8, labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const e = entities[datasets.indexOf(ctx.dataset)];
+              return [`${ctx.dataset.label}`, ` Return: ${fmtPct(e.mean_return)}`, ` Risk: ${fmtPct(e.std_dev)}`, ` Budget: ${fmtUSD(e.budget)}`];
+            }
+          }
         }
+      },
+      scales: {
+        x: { title: { display: true, text: 'Risk (Std Dev %)', color: '#94a3b8', font: { size: 10 } },
+          ticks: { color: '#94a3b8', font: { size: 9 }, callback: v => v + '%' }, grid: { color: '#334155' } },
+        y: { title: { display: true, text: 'Expected Return %', color: '#94a3b8', font: { size: 10 } },
+          ticks: { color: '#94a3b8', font: { size: 9 }, callback: v => v + '%' }, grid: { color: '#334155' } }
       }
     }
   });
 }
 
-function buildCDFChart(totalArr) {
-  destroyChart('cdf');
-  const ctx = document.getElementById('chart-cdf').getContext('2d');
-  const sorted = [...totalArr].sort((a, b) => a - b);
-  const n = sorted.length;
-  const POINTS = 100;
-  const step = Math.ceil(n / POINTS);
-  const labels = [], data = [];
-  for (let i = 0; i < n; i += step) {
-    labels.push(fmtMoney(sorted[i]));
-    data.push(((i / n) * 100).toFixed(1));
-  }
+function renderSharpeChart(entities) {
+  destroyChart('sharpe');
+  const ctx = document.getElementById('sharpeChart').getContext('2d');
+  const sorted = [...entities].sort((a, b) => sharpe(b) - sharpe(a));
+  const colors = sorted.map(e => {
+    const s = sharpe(e);
+    return s >= 2 ? '#10b981cc' : s >= 1 ? '#f59e0bcc' : '#ef4444cc';
+  });
 
-  charts.cdf = new Chart(ctx, {
-    type: 'line',
+  chartInstances.sharpe = new Chart(ctx, {
+    type: 'bar',
     data: {
-      labels,
+      labels: sorted.map(e => e.name),
       datasets: [{
-        label: 'Cumulative probability',
-        data,
-        borderColor: '#ffd93d',
-        backgroundColor: 'rgba(255,217,61,.12)',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 0,
-        borderWidth: 2
+        label: 'Sharpe Ratio',
+        data: sorted.map(e => +sharpe(e).toFixed(3)),
+        backgroundColor: colors,
+        borderColor: colors.map(c => c.slice(0, 7)),
+        borderWidth: 1.5,
+        borderRadius: 4,
       }]
     },
     options: {
-      ...chartDefaults,
-      scales: {
-        x: {
-          ...chartDefaults.scales.x,
-          ticks: { ...chartDefaults.scales.x.ticks, maxTicksLimit: 8 }
-        },
-        y: {
-          ...chartDefaults.scales.y,
-          ticks: { ...chartDefaults.scales.y.ticks, callback: v => v + '%' },
-          min: 0, max: 100
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` Sharpe: ${ctx.raw}`,
+            afterLabel: ctx => {
+              const e = sorted[ctx.dataIndex];
+              return [` Return: ${fmtPct(e.mean_return)}`, ` Risk: ${fmtPct(e.std_dev)}`, ` Budget: ${fmtUSD(e.budget)}`];
+            }
+          }
         }
+      },
+      scales: {
+        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#334155' } },
+        y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } }
       }
     }
   });
 }
 
-// ──────────────────────────────────────────────
-// Campaign UI
-// ──────────────────────────────────────────────
-function renderCampaigns() {
-  const list = document.getElementById('campaigns-list');
-  const totalBudget = campaigns.reduce((s, c) => s + c.budget, 0);
-  document.getElementById('total-budget-display').textContent = fmtMoney(totalBudget);
+// ============================================================
+//  TABLE
+// ============================================================
+function renderTable(entities, mc) {
+  const totalBudget = entities.reduce((s, e) => s + e.budget, 0);
+  const maxBudget = Math.max(...entities.map(e => e.budget));
+  const colLabel = state.level === 'keyword' ? 'Keyword' : state.level === 'ad_group' ? 'Ad Group' : 'Campaign';
+  const drillable = state.level !== 'keyword';
 
-  list.innerHTML = '';
-  campaigns.forEach((c, i) => {
-    const maxBudget = Math.max(totalBudget * 3, 100000);
-    const card = document.createElement('div');
-    card.className = 'campaign-card';
-    card.innerHTML = `
-      <div class="campaign-header">
-        <div class="campaign-name">
-          <div class="color-dot" style="background:${c.color}"></div>
-          ${c.name}
+  const sorted = [...entities].sort((a, b) => sharpe(b) - sharpe(a));
+
+  let html = `<thead><tr>
+    <th>#</th><th>${colLabel}</th><th>Budget</th><th>Budget %</th>
+    <th>Exp. Return</th><th>Std Dev</th><th>Sharpe</th><th>Risk</th>
+  </tr></thead><tbody>`;
+
+  sorted.forEach((e, rank) => {
+    const pctBudget = e.budget / totalBudget;
+    const [rLabel, rClass] = riskLabel(e.std_dev);
+    const s = sharpe(e);
+    const barW = Math.round(e.budget / maxBudget * 100);
+    const clickAttr = drillable
+      ? `onclick="handleTableDrillDown('${esc(e.name)}')" title="Click to drill down"`
+      : '';
+    html += `<tr ${clickAttr}>
+      <td style="color:var(--muted)">${rank + 1}</td>
+      <td class="td-name">${e.name}</td>
+      <td>${fmtUSD(e.budget)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <div class="bar-bg"><div class="bar-fill" style="width:${barW}%"></div></div>
+          <span style="color:var(--muted);font-size:0.75rem">${fmtPct(pctBudget)}</span>
         </div>
-        <input class="campaign-budget-input" type="number" value="${c.budget}"
-          min="0" max="${maxBudget}" step="1000" data-idx="${i}" />
-      </div>
-      <input type="range" class="campaign-slider" min="0" max="${maxBudget}"
-        step="1000" value="${c.budget}" data-idx="${i}" />
-      <div class="campaign-meta">
-        <span>μ: <strong>${pct(c.mean)}</strong></span>
-        <span>σ: <strong>${pct(c.std)}</strong></span>
-        <span>Sharpe: <strong>${c.std > 0 ? (c.mean / c.std).toFixed(2) : '—'}</strong></span>
-      </div>
-    `;
-    list.appendChild(card);
+      </td>
+      <td style="color:${e.mean_return >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtPct(e.mean_return)}</td>
+      <td style="color:var(--muted)">${fmtPct(e.std_dev)}</td>
+      <td style="font-weight:600;color:${s >= 2 ? 'var(--green)' : s >= 1 ? 'var(--yellow)' : 'var(--red)'}">${fmtSharpe(s)}</td>
+      <td><span class="td-badge ${rClass}">${rLabel}</span></td>
+    </tr>`;
   });
 
-  // Bind slider ↔ number input
-  list.querySelectorAll('.campaign-slider').forEach(el => {
-    el.addEventListener('input', e => {
-      const idx = +e.target.dataset.idx;
-      campaigns[idx].budget = +e.target.value;
-      const inp = list.querySelector(`.campaign-budget-input[data-idx="${idx}"]`);
-      if (inp) inp.value = e.target.value;
-      updateTotalDisplay();
-      debouncedRerun();
-    });
+  html += '</tbody>';
+  document.getElementById('dataTable').innerHTML = html;
+  document.getElementById('tableTitle').textContent = `${colLabel} Performance (sorted by Sharpe Ratio)`;
+}
+
+function handleTableDrillDown(name) {
+  if (state.level === 'campaign') navigateTo('ad_group', name);
+  else if (state.level === 'ad_group') navigateTo('keyword', state.campaign, name);
+}
+
+// ============================================================
+//  CHAT ENGINE
+// ============================================================
+function addMessage(role, html) {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = `msg msg-${role}`;
+  div.innerHTML = html;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function initChat() {
+  addMessage('assistant',
+    `Hi! I'm your Budget AI Assistant. I can help you analyze your campaign data and run what-if scenarios.<br><br>
+    Try asking:<br>
+    • <em>"What keywords are in the Brand ad group?"</em><br>
+    • <em>"What if I increase Email budget by 50%?"</em><br>
+    • <em>"Which campaign has the best Sharpe ratio?"</em><br>
+    • <em>"Compare Paid Search and Social Media"</em>`
+  );
+}
+
+function updateChatSuggestions() {
+  const campaigns = allCampaigns().slice(0, 3);
+  const adGroups = allAdGroups().slice(0, 2);
+  const suggestions = [
+    `Best performing campaign`,
+    `Riskiest campaigns`,
+    campaigns[0] ? `What if I increase ${campaigns[0]} by 30%?` : null,
+    adGroups[0] ? `Keywords in ${adGroups[0]}` : null,
+    campaigns[1] && campaigns[2] ? `Compare ${campaigns[1]} and ${campaigns[2]}` : null,
+    `Portfolio probability of loss`,
+  ].filter(Boolean);
+
+  document.getElementById('chatSuggestions').innerHTML =
+    suggestions.map(s => `<span class="suggestion" onclick="submitQuery('${esc(s)}')">${s}</span>`).join('');
+}
+
+function submitQuery(q) {
+  document.getElementById('chatInput').value = q;
+  sendChat();
+}
+
+function sendChat() {
+  const input = document.getElementById('chatInput');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  addMessage('user', escHtml(q));
+  setTimeout(() => processQuery(q), 50);
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ---- ENTITY FINDER ----
+function findEntityByName(q) {
+  const lq = q.toLowerCase();
+  // Campaigns
+  for (const c of allCampaigns()) if (lq.includes(c.toLowerCase())) return { type: 'campaign', name: c };
+  // Ad groups
+  for (const ag of allAdGroups()) if (lq.includes(ag.toLowerCase())) return { type: 'ad_group', name: ag };
+  // Keywords
+  for (const r of rawData) if (lq.includes(r.keyword.toLowerCase())) return { type: 'keyword', name: r.keyword, campaign: r.campaign, adGroup: r.ad_group };
+  return null;
+}
+
+// ---- WHAT-IF HELPER ----
+function runWhatIf(entityType, entityName, changeMultiplier) {
+  // Clone rawData, apply budget change to matching rows
+  const modified = rawData.map(r => {
+    let match = false;
+    if (entityType === 'campaign' && r.campaign === entityName) match = true;
+    if (entityType === 'ad_group' && r.ad_group === entityName) match = true;
+    if (entityType === 'keyword' && r.keyword === entityName) match = true;
+    return match ? { ...r, budget: r.budget * changeMultiplier } : { ...r };
   });
-
-  list.querySelectorAll('.campaign-budget-input').forEach(el => {
-    el.addEventListener('change', e => {
-      const idx = +e.target.dataset.idx;
-      const val = Math.max(0, +e.target.value);
-      campaigns[idx].budget = val;
-      const slider = list.querySelector(`.campaign-slider[data-idx="${idx}"]`);
-      if (slider) slider.value = val;
-      updateTotalDisplay();
-      debouncedRerun();
-    });
-  });
+  // Aggregate to portfolio level
+  const total = modified.reduce((s, r) => s + r.budget, 0);
+  const portfolioMean = modified.reduce((s, r) => s + r.mean_return * r.budget, 0) / total;
+  const portfolioVar = modified.reduce((s, r) => s + Math.pow(r.budget / total, 2) * Math.pow(r.std_dev, 2), 0);
+  const entities = [{ mean_return: portfolioMean, std_dev: Math.sqrt(portfolioVar), budget: total }];
+  return runMonteCarlo(entities);
 }
 
-function updateTotalDisplay() {
-  const total = campaigns.reduce((s, c) => s + c.budget, 0);
-  document.getElementById('total-budget-display').textContent = fmtMoney(total);
+// ---- INTENT HANDLERS ----
+function handleHelp() {
+  addMessage('assistant', `Here's what I can help with:<br>
+    <ul class="msg-list">
+      <li><span class="dot">•</span> <strong>Structure:</strong> "What keywords are in [ad group]?" / "What ad groups are in [campaign]?"</li>
+      <li><span class="dot">•</span> <strong>What-if:</strong> "What if I increase [X] budget by 50%?" / "What if I halve [Y]?"</li>
+      <li><span class="dot">•</span> <strong>Performance:</strong> "Best/worst performing campaign" / "Highest Sharpe ratio"</li>
+      <li><span class="dot">•</span> <strong>Risk:</strong> "Riskiest campaigns" / "Probability of loss for [X]"</li>
+      <li><span class="dot">•</span> <strong>Compare:</strong> "Compare [X] and [Y]"</li>
+      <li><span class="dot">•</span> <strong>Portfolio:</strong> "Overall portfolio summary" / "Total expected return"</li>
+    </ul>`);
 }
 
-// ──────────────────────────────────────────────
-// Debounced re-run (fires after slider settles)
-// ──────────────────────────────────────────────
-let rerunTimer = null;
-function debouncedRerun() {
-  clearTimeout(rerunTimer);
-  rerunTimer = setTimeout(() => {
-    if (campaigns.length) triggerRun();
-  }, 350);
-}
-
-// ──────────────────────────────────────────────
-// Main run
-// ──────────────────────────────────────────────
-function triggerRun() {
-  if (!campaigns.length) return;
-  const nSims    = Math.min(50000, Math.max(500, +document.getElementById('n-sims').value));
-  const nPeriods = Math.min(60,   Math.max(1,   +document.getElementById('n-periods').value));
-  const distType = document.getElementById('dist-type').value;
-
-  // Progress bar
-  const pbWrap = document.getElementById('progress-bar-wrap');
-  const pb = document.getElementById('progress-bar');
-  pbWrap.style.display = 'block';
-  pb.style.width = '30%';
-
-  // Async so UI doesn't freeze
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      pb.style.width = '70%';
-      setTimeout(() => {
-        simResults = runSimulation(campaigns, nSims, nPeriods, distType);
-        pb.style.width = '100%';
-
-        document.getElementById('empty-state').style.display = 'none';
-        document.getElementById('results-area').style.display = 'block';
-        buildCharts(simResults, campaigns, nPeriods);
-
-        document.getElementById('header-status').textContent =
-          `${nSims.toLocaleString()} simulations · ${campaigns.length} campaigns · ${nPeriods} periods`;
-
-        setTimeout(() => { pbWrap.style.display = 'none'; pb.style.width = '0%'; }, 300);
-      }, 10);
-    }, 10);
-  });
-}
-
-// ──────────────────────────────────────────────
-// CSV upload
-// ──────────────────────────────────────────────
-function loadCSVText(text) {
-  try {
-    campaigns = parseCSV(text);
-    renderCampaigns();
-    document.getElementById('run-btn').disabled = false;
-    document.getElementById('upload-label').textContent = `✓ Loaded ${campaigns.length} campaigns`;
-    triggerRun();
-  } catch (e) {
-    alert('CSV parse error: ' + e.message);
+function handleKeywordsInAdGroup(q) {
+  // Try to find an ad group mentioned
+  for (const ag of allAdGroups()) {
+    if (q.toLowerCase().includes(ag.toLowerCase())) {
+      const campaign = campaignOfAdGroup(ag);
+      const kws = keywordsForAdGroup(campaign, ag);
+      addMessage('assistant', `The <strong>${ag}</strong> ad group (in <strong>${campaign}</strong>) contains ${kws.length} keyword${kws.length !== 1 ? 's' : ''}:<br>
+        <ul class="msg-list">${kws.map(k => {
+          const r = rawData.find(r => r.keyword === k && r.ad_group === ag);
+          return `<li><span class="dot">•</span> <strong>${k}</strong> — ${fmtPct(r.mean_return)} expected return, ${fmtUSD(r.budget)} budget</li>`;
+        }).join('')}</ul>`);
+      return true;
+    }
   }
+  return false;
 }
 
-document.getElementById('csv-input').addEventListener('change', e => {
+function handleAdGroupsInCampaign(q) {
+  for (const c of allCampaigns()) {
+    if (q.toLowerCase().includes(c.toLowerCase())) {
+      const ags = adGroupsForCampaign(c);
+      addMessage('assistant', `The <strong>${c}</strong> campaign contains ${ags.length} ad group${ags.length !== 1 ? 's' : ''}:<br>
+        <ul class="msg-list">${ags.map(ag => {
+          const rows = rawData.filter(r => r.campaign === c && r.ad_group === ag);
+          const agg = aggregateRows(rows);
+          return `<li><span class="dot">•</span> <strong>${ag}</strong> — ${rows.length} keywords, ${fmtUSD(agg.budget)} budget, ${fmtPct(agg.mean_return)} expected return</li>`;
+        }).join('')}</ul>`);
+      return true;
+    }
+  }
+  return false;
+}
+
+function handleWhatIf(q) {
+  // Parse multiplier
+  let mult = null;
+  const dbl = q.match(/\b(double|2x)\b/i);
+  const hlv = q.match(/\b(half|halve|50%)\b/i);
+  const pct_match = q.match(/([+-]?\d+(?:\.\d+)?)\s*%/);
+  const inc = /\b(increase|boost|grow|raise|add|up)\b/i.test(q);
+  const dec = /\b(decrease|cut|reduce|drop|lower|halve|remove)\b/i.test(q);
+
+  if (dbl) { mult = 2; }
+  else if (hlv) { mult = 0.5; }
+  else if (pct_match) {
+    const val = parseFloat(pct_match[1]);
+    if (inc) mult = 1 + val / 100;
+    else if (dec) mult = 1 - val / 100;
+    else mult = 1 + val / 100; // default: treat as increase
+  } else {
+    return false;
+  }
+
+  if (mult <= 0) { addMessage('assistant', "That would eliminate the budget entirely. Try a reduction below 100%."); return true; }
+
+  const entity = findEntityByName(q);
+  if (!entity) {
+    addMessage('assistant', "I couldn't identify which campaign, ad group, or keyword you're referring to. Try being more specific.");
+    return true;
+  }
+
+  const origMC = runMonteCarlo(getCampaignData());
+  const newMC = runWhatIf(entity.type, entity.name, mult);
+  const orig = mcStats(origMC);
+  const newS = mcStats(newMC);
+  const changePct = ((newS.p50 - orig.p50) / Math.abs(orig.p50) * 100).toFixed(1);
+  const changeDir = newS.p50 > orig.p50 ? '▲' : '▼';
+  const changeColor = newS.p50 > orig.p50 ? 'var(--green)' : 'var(--red)';
+
+  const action = mult > 1 ? `increased by ${Math.round((mult - 1) * 100)}%` :
+    mult === 0.5 ? 'halved' : `decreased by ${Math.round((1 - mult) * 100)}%`;
+
+  addMessage('assistant', `If you ${mult > 1 ? 'increase' : 'decrease'} <strong>${entity.name}</strong> (${entity.type.replace('_', ' ')}) budget ${action}:<br>
+    <div class="mc-compare">
+      <div class="mc-box">
+        <div class="mc-box-label">ORIGINAL PORTFOLIO</div>
+        <div class="mc-box-val">P10: ${fmtPct(orig.p10)}</div>
+        <div class="mc-box-val">P50: ${fmtPct(orig.p50)}</div>
+        <div class="mc-box-val">P90: ${fmtPct(orig.p90)}</div>
+        <div class="mc-box-val" style="color:var(--red);margin-top:0.2rem">Loss: ${fmtPct(orig.pLoss, 0)}</div>
+      </div>
+      <div class="mc-box">
+        <div class="mc-box-label">WHAT-IF PORTFOLIO</div>
+        <div class="mc-box-val">P10: ${fmtPct(newS.p10)}</div>
+        <div class="mc-box-val">P50: ${fmtPct(newS.p50)}</div>
+        <div class="mc-box-val">P90: ${fmtPct(newS.p90)}</div>
+        <div class="mc-box-val" style="color:var(--red);margin-top:0.2rem">Loss: ${fmtPct(newS.pLoss, 0)}</div>
+      </div>
+    </div>
+    Median return <strong style="color:${changeColor}">${changeDir} ${Math.abs(changePct)}%</strong> relative to current.
+    ${newS.pLoss < orig.pLoss ? 'Risk of loss decreases.' : newS.pLoss > orig.pLoss ? 'Risk of loss increases.' : 'Risk of loss unchanged.'}`);
+  return true;
+}
+
+function handleBestPerformers(q) {
+  const lq = q.toLowerCase();
+  const isWorst = /\b(worst|lowest|weakest|poor)\b/.test(lq);
+  const isRisk = /\brisk|volatil|std|standard\b/.test(lq);
+
+  const data = getCampaignData();
+  let sorted;
+  let metric, metricFn;
+
+  if (isRisk) {
+    metricFn = e => e.std_dev;
+    metric = 'risk (std dev)';
+    sorted = [...data].sort((a, b) => isWorst ? a.std_dev - b.std_dev : b.std_dev - a.std_dev);
+  } else {
+    metricFn = e => sharpe(e);
+    metric = 'Sharpe ratio';
+    sorted = [...data].sort((a, b) => isWorst ? sharpe(a) - sharpe(b) : sharpe(b) - sharpe(a));
+  }
+
+  const label = isWorst ? 'Bottom' : 'Top';
+  const top = sorted.slice(0, 5);
+
+  addMessage('assistant', `<strong>${label} campaigns by ${metric}:</strong><br>
+    <ul class="msg-list">${top.map((e, i) => {
+      const val = isRisk ? fmtPct(e.std_dev) : fmtSharpe(sharpe(e));
+      return `<li><span class="dot">${i + 1}.</span> <strong>${e.name}</strong> — ${metric}: ${val}, return: ${fmtPct(e.mean_return)}, budget: ${fmtUSD(e.budget)}</li>`;
+    }).join('')}</ul>`);
+  return true;
+}
+
+function handleProbLoss(q) {
+  const entity = findEntityByName(q);
+  const mc = entity
+    ? (() => {
+        if (entity.type === 'campaign') return runMonteCarlo(getAdGroupData(entity.name).length ? getAdGroupData(entity.name) : []);
+        if (entity.type === 'ad_group') { const c = campaignOfAdGroup(entity.name); return runMonteCarlo(getKeywordData(c, entity.name)); }
+        const r = rawData.find(row => row.keyword === entity.name);
+        return r ? runMonteCarlo([{ mean_return: r.mean_return, std_dev: r.std_dev, budget: r.budget }]) : null;
+      })()
+    : runMonteCarlo(getCampaignData());
+
+  if (!mc || mc.length === 0) { addMessage('assistant', "Couldn't compute for that entity."); return true; }
+  const { p10, p50, p90, pLoss } = mcStats(mc);
+  const name = entity ? entity.name : 'overall portfolio';
+  const color = pLoss < 0.05 ? 'var(--green)' : pLoss < 0.15 ? 'var(--yellow)' : 'var(--red)';
+  addMessage('assistant', `<strong>${name}</strong> loss probability analysis:<br>
+    <ul class="msg-list">
+      <li><span class="dot">•</span> <strong style="color:${color}">Prob. of loss: ${fmtPct(pLoss, 1)}</strong></li>
+      <li><span class="dot">•</span> P10 (worst 10%): ${fmtPct(p10)}</li>
+      <li><span class="dot">•</span> P50 (median): ${fmtPct(p50)}</li>
+      <li><span class="dot">•</span> P90 (best 10%): ${fmtPct(p90)}</li>
+    </ul>`);
+  return true;
+}
+
+function handleCompare(q) {
+  // Find two entities
+  const lq = q.toLowerCase();
+  const allEnts = [
+    ...allCampaigns().map(n => ({ type: 'campaign', name: n })),
+    ...allAdGroups().map(n => ({ type: 'ad_group', name: n })),
+    ...rawData.map(r => ({ type: 'keyword', name: r.keyword })),
+  ];
+  const matches = allEnts.filter(e => lq.includes(e.name.toLowerCase()));
+  if (matches.length < 2) {
+    addMessage('assistant', "I need two entities to compare. Try: <em>\"Compare Email and Social Media\"</em>");
+    return true;
+  }
+
+  const getEntityStats = (e) => {
+    if (e.type === 'campaign') {
+      const data = getCampaignData().find(c => c.name === e.name);
+      return data ? { ...data, mc: runMonteCarlo(getAdGroupData(e.name)) } : null;
+    }
+    if (e.type === 'ad_group') {
+      const c = campaignOfAdGroup(e.name);
+      const data = getAdGroupData(c).find(ag => ag.name === e.name);
+      return data ? { ...data, mc: runMonteCarlo(getKeywordData(c, e.name)) } : null;
+    }
+    const r = rawData.find(row => row.keyword === e.name);
+    return r ? { name: r.keyword, mean_return: r.mean_return, std_dev: r.std_dev, budget: r.budget, mc: runMonteCarlo([r]) } : null;
+  };
+
+  const a = getEntityStats(matches[0]);
+  const b = getEntityStats(matches[1]);
+  if (!a || !b) { addMessage('assistant', "Couldn't find enough data for comparison."); return true; }
+
+  const statsA = mcStats(a.mc), statsB = mcStats(b.mc);
+  const winner = sharpe(a) >= sharpe(b) ? a.name : b.name;
+
+  const row = (label, va, vb, better) => {
+    const aWins = better === 'higher' ? parseFloat(va) >= parseFloat(vb) : parseFloat(va) <= parseFloat(vb);
+    return `<tr>
+      <td style="color:var(--muted);font-size:0.75rem">${label}</td>
+      <td style="color:${aWins ? 'var(--green)' : 'inherit'};font-weight:${aWins ? '600' : '400'}">${va}</td>
+      <td style="color:${!aWins ? 'var(--green)' : 'inherit'};font-weight:${!aWins ? '600' : '400'}">${vb}</td>
+    </tr>`;
+  };
+
+  addMessage('assistant', `<strong>Comparison: ${a.name} vs ${b.name}</strong><br>
+    <table style="width:100%;border-collapse:collapse;margin-top:0.5rem;font-size:0.78rem">
+      <thead><tr>
+        <th style="text-align:left;padding:0.3rem;color:var(--muted);font-size:0.7rem"></th>
+        <th style="text-align:left;padding:0.3rem;color:var(--accent)">${a.name}</th>
+        <th style="text-align:left;padding:0.3rem;color:var(--purple)">${b.name}</th>
+      </tr></thead>
+      <tbody style="border-top:1px solid var(--border)">
+        ${row('Budget', fmtUSD(a.budget), fmtUSD(b.budget), 'higher')}
+        ${row('Exp. Return', fmtPct(a.mean_return), fmtPct(b.mean_return), 'higher')}
+        ${row('Risk (Std Dev)', fmtPct(a.std_dev), fmtPct(b.std_dev), 'lower')}
+        ${row('Sharpe Ratio', fmtSharpe(sharpe(a)), fmtSharpe(sharpe(b)), 'higher')}
+        ${row('MC Median (P50)', fmtPct(statsA.p50), fmtPct(statsB.p50), 'higher')}
+        ${row('Prob. of Loss', fmtPct(statsA.pLoss, 1), fmtPct(statsB.pLoss, 1), 'lower')}
+      </tbody>
+    </table>
+    <br><strong>${winner}</strong> has the better risk-adjusted return (Sharpe ratio).`);
+  return true;
+}
+
+function handlePortfolioSummary() {
+  const campaigns = getCampaignData();
+  const totalBudget = campaigns.reduce((s, c) => s + c.budget, 0);
+  const mc = runMonteCarlo(campaigns);
+  const { p10, p50, p90, pLoss } = mcStats(mc);
+  const bestSharpe = campaigns.reduce((b, c) => sharpe(c) > sharpe(b) ? c : b, campaigns[0]);
+  const worstSharpe = campaigns.reduce((w, c) => sharpe(c) < sharpe(w) ? c : w, campaigns[0]);
+
+  addMessage('assistant', `<strong>Overall Portfolio Summary</strong><br>
+    <ul class="msg-list">
+      <li><span class="dot">•</span> Total budget: <strong>${fmtUSD(totalBudget)}</strong> across ${campaigns.length} campaigns</li>
+      <li><span class="dot">•</span> Median return (P50): <strong>${fmtPct(p50)}</strong></li>
+      <li><span class="dot">•</span> Best case (P90): <strong style="color:var(--green)">${fmtPct(p90)}</strong></li>
+      <li><span class="dot">•</span> Worst case (P10): <strong style="color:var(--red)">${fmtPct(p10)}</strong></li>
+      <li><span class="dot">•</span> Probability of loss: <strong>${fmtPct(pLoss, 1)}</strong></li>
+      <li><span class="dot">•</span> Best Sharpe: <strong>${bestSharpe.name}</strong> (${fmtSharpe(sharpe(bestSharpe))})</li>
+      <li><span class="dot">•</span> Worst Sharpe: <strong>${worstSharpe.name}</strong> (${fmtSharpe(sharpe(worstSharpe))})</li>
+    </ul>`);
+  return true;
+}
+
+function handleExpectedReturn(q) {
+  const entity = findEntityByName(q);
+  if (!entity) { return false; }
+
+  let stats;
+  if (entity.type === 'campaign') {
+    const data = getCampaignData().find(c => c.name === entity.name);
+    if (!data) return false;
+    stats = { ...data };
+  } else if (entity.type === 'ad_group') {
+    const c = campaignOfAdGroup(entity.name);
+    const data = getAdGroupData(c).find(ag => ag.name === entity.name);
+    if (!data) return false;
+    stats = { ...data };
+  } else {
+    const r = rawData.find(row => row.keyword === entity.name);
+    if (!r) return false;
+    stats = { name: r.keyword, mean_return: r.mean_return, std_dev: r.std_dev, budget: r.budget };
+  }
+
+  const mc = runMonteCarlo([stats]);
+  const { p10, p50, p90, pLoss } = mcStats(mc);
+  const [rLabel] = riskLabel(stats.std_dev);
+
+  addMessage('assistant', `<strong>${stats.name}</strong> (${entity.type.replace('_', ' ')}) stats:<br>
+    <ul class="msg-list">
+      <li><span class="dot">•</span> Budget: <strong>${fmtUSD(stats.budget)}</strong></li>
+      <li><span class="dot">•</span> Expected return: <strong>${fmtPct(stats.mean_return)}</strong></li>
+      <li><span class="dot">•</span> Risk: ${fmtPct(stats.std_dev)} std dev (${rLabel})</li>
+      <li><span class="dot">•</span> Sharpe ratio: <strong>${fmtSharpe(sharpe(stats))}</strong></li>
+      <li><span class="dot">•</span> Monte Carlo P10/P50/P90: ${fmtPct(p10)} / ${fmtPct(p50)} / ${fmtPct(p90)}</li>
+      <li><span class="dot">•</span> Probability of loss: ${fmtPct(pLoss, 1)}</li>
+    </ul>`);
+  return true;
+}
+
+// ---- MAIN QUERY PROCESSOR ----
+function processQuery(q) {
+  if (!rawData.length) {
+    addMessage('assistant', 'No data loaded yet. Please upload a CSV file first.');
+    return;
+  }
+
+  const lq = q.toLowerCase();
+
+  // Help
+  if (/\bhelp\b/.test(lq)) { handleHelp(); return; }
+
+  // What-if budget scenario
+  if (/what.?if|increase|decrease|double|halve|cut|reduce|boost|raise/i.test(lq) &&
+      /budget|spend|allocation/i.test(lq)) {
+    if (handleWhatIf(q)) return;
+  }
+
+  // Shorter what-if: "what if I double Email"
+  if (/what.?if/i.test(lq)) {
+    if (handleWhatIf(q)) return;
+  }
+
+  // Keywords in ad group
+  if (/keyword/i.test(lq) && /\bin\b|\bfor\b|\bof\b/i.test(lq)) {
+    if (handleKeywordsInAdGroup(q)) return;
+  }
+
+  // Ad groups in campaign
+  if (/ad.?group/i.test(lq) && /\bin\b|\bfor\b|\bof\b/i.test(lq)) {
+    if (handleAdGroupsInCampaign(q)) return;
+  }
+
+  // Structure / show campaigns / ad groups
+  if (/structure|overview|contain|include/i.test(lq)) {
+    if (/campaign/i.test(lq)) { handleAdGroupsInCampaign(q) || handleBestPerformers(q); return; }
+    if (/ad.?group/i.test(lq)) { handleKeywordsInAdGroup(q); return; }
+  }
+
+  // Portfolio / overall summary
+  if (/portfolio|overall|total\s+return|summary|all campaigns/i.test(lq)) {
+    handlePortfolioSummary(); return;
+  }
+
+  // Compare
+  if (/\bcompare\b|\bvs\.?\b|\bversus\b/i.test(lq)) {
+    if (handleCompare(q)) return;
+  }
+
+  // Probability of loss/profit
+  if (/prob|chance|likelihood/i.test(lq)) {
+    if (handleProbLoss(q)) return;
+  }
+
+  // Best/worst/riskiest performers
+  if (/\bbest\b|\btop\b|\bhighest\b|\bstrongest\b|\bworst\b|\blowest\b|\bweakest\b|\brisk|\bvol/i.test(lq)) {
+    if (handleBestPerformers(q)) return;
+  }
+
+  // Expected return for entity
+  if (/return|performance|performing|sharpe|stats|statistics/i.test(lq)) {
+    if (handleExpectedReturn(q)) return;
+  }
+
+  // Just entity name mentioned - show its stats
+  const entity = findEntityByName(q);
+  if (entity) {
+    if (entity.type === 'keyword') {
+      handleExpectedReturn(q); return;
+    }
+    // For campaign: show ad groups
+    if (entity.type === 'campaign') {
+      handleAdGroupsInCampaign(q); return;
+    }
+    // For ad group: show keywords
+    if (entity.type === 'ad_group') {
+      handleKeywordsInAdGroup(q); return;
+    }
+  }
+
+  // Fallback
+  addMessage('assistant', `I'm not sure I understand that query. Try:<br>
+    <ul class="msg-list">
+      <li><span class="dot">•</span> "What keywords are in [ad group name]?"</li>
+      <li><span class="dot">•</span> "What if I increase [campaign] budget by 30%?"</li>
+      <li><span class="dot">•</span> "Compare [campaign A] and [campaign B]"</li>
+      <li><span class="dot">•</span> "Best performing campaigns"</li>
+      <li><span class="dot">•</span> Type <strong>help</strong> to see all commands</li>
+    </ul>`);
+}
+
+// ============================================================
+//  UI EVENT HANDLERS
+// ============================================================
+document.getElementById('chatToggle').addEventListener('click', () => {
+  document.getElementById('chatPanel').classList.toggle('hidden');
+});
+document.getElementById('chatClose').addEventListener('click', () => {
+  document.getElementById('chatPanel').classList.add('hidden');
+});
+document.getElementById('chatClear').addEventListener('click', () => {
+  document.getElementById('chatMessages').innerHTML = '';
+  initChat();
+});
+document.getElementById('chatSend').addEventListener('click', sendChat);
+document.getElementById('chatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendChat();
+});
+document.getElementById('fileInput').addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = ev => loadCSVText(ev.target.result);
+  reader.onload = ev => loadCSV(ev.target.result);
   reader.readAsText(file);
+  e.target.value = '';
 });
 
-const zone = document.getElementById('upload-zone');
-zone.addEventListener('click', () => document.getElementById('csv-input').click());
-zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-zone.addEventListener('drop', e => {
-  e.preventDefault();
-  zone.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => loadCSVText(ev.target.result);
-  reader.readAsText(file);
-});
-
-// ──────────────────────────────────────────────
-// Demo data
-// ──────────────────────────────────────────────
-document.getElementById('demo-btn').addEventListener('click', () => {
-  const demo = `campaign,mean_return,std_dev,budget
-Paid Search,0.18,0.12,25000
-Social Media,0.22,0.18,20000
-Email,0.35,0.10,8000
-Display Ads,0.08,0.14,12000
-Content SEO,0.28,0.09,15000
-Influencer,0.15,0.25,10000
-Affiliates,0.20,0.11,18000`;
-  loadCSVText(demo);
-});
-
-// ──────────────────────────────────────────────
-// Run button
-// ──────────────────────────────────────────────
-document.getElementById('run-btn').addEventListener('click', triggerRun);
-
-// Re-run when sim settings change
-['n-sims','n-periods','dist-type'].forEach(id => {
-  document.getElementById(id).addEventListener('change', debouncedRerun);
-});
+// ============================================================
+//  BOOT
+// ============================================================
+(function init() {
+  loadCSV(DEFAULT_CSV);
+  initChat();
+})();
 </script>
 </body>
 </html>
